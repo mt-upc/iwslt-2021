@@ -27,12 +27,12 @@ def asr_collate_fn(batch):
 
 # parse arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("--tsv_file_path", type = str, default = "C:\\Users\\ioann\\Documents\\datasets\\MUSTC_v1.0_prep_wav\\en-de\\data\\dev_asr_ioannis.tsv",
-			help = "Path to the tsv file")
-parser.add_argument("--batch_size", type = int, default = 2,
+parser.add_argument("--dir_path", type = str, default = "./../../datasets/speech_translation/MUSTC_v1.0_prep_wav/en-de",
+			help = "path of the directory containing the tsv file and its associated wav files")
+parser.add_argument("--tsv_file_name", type = str, default = "dev_asr.tsv",
+			help = "name of the tsv file in $dir_path")
+parser.add_argument("--batch_size", type = int, default = 8,
 			help = "batch size to be used during inference")
-parser.add_argument("--num_workers", type = int, default = 0,
-			help = "number of cpu workers for the dataloader")
 parser.add_argument("--model_name", type = str, default = "facebook/wav2vec2-large-960h-lv60-self",
 			help = "name of the pre-trained model to be used")
 args = parser.parse_args()
@@ -49,12 +49,12 @@ model = Wav2Vec2ForCTC.from_pretrained(args.model_name).to(main_device)
 print(f"Loaded model and tokenizer: {args.model_name}")
 
 # load dataset and initialize dataloader
-dataset = AsrDataset(args.tsv_file_path)
+dataset = AsrDataset(args.dir_path, args.tsv_file_name)
 dataloader = DataLoader(dataset,
 						args.batch_size,
 						collate_fn = asr_collate_fn,
 						shuffle = False,
-						num_workers = args.num_workers,
+						num_workers = n_cpu // 4,
 						drop_last = False)
 print("Loaded dataset and intialized dataloader")
 
@@ -72,7 +72,7 @@ with torch.no_grad():
 
 		# fetch data from batch
 		ids = batch[0]
-		input_values = batch[1]
+		input_values = batch[1].to(main_device)
 		tgt_text = batch[2]
 
 		# retrieve logits

@@ -4,6 +4,11 @@ __pycache__/
 *$py.class
 *.ipynb
 
+asr/*.sh
+asr/output.txt
+asr/*.out
+asr/*.json
+
 # C extensions
 *.so
 
