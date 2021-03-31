@@ -1,0 +1,22 @@
+name: iwslt21
+
+channels:
+  - pytorch
+  - conda-forge
+
+dependencies:
+  - python=3.8.6
+  - pip=20.3.3
+  - tqdm=4.49.0
+  - pandas=1.2.3
+  - pytorch=1.7.0
+  - torchaudio=0.7.0
+  - cudatoolkit=11.0
+  - sentencepiece=0.1.91
+  - editdistance=0.5.3
+  - transformers=4.4.2
+  - pysoundfile=0.10.3.post1
+  - num2words=0.5.10
+
+  - pip:
+    - jiwer==1.3.2
