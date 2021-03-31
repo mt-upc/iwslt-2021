@@ -1,0 +1,58 @@
+# @package _global_
+
+common:
+  seed: 1
+
+task:
+  _name: speech_to_text
+  data: ???
+  data_config_yaml: config_st.yaml
+  max_source_positions: 960_000   # 60s @ 16kHz
+  max_target_positions: 1024
+
+dataset:
+  train_subset: train_st
+  valid_subset: dev_st
+  num_workers: 6
+  max_tokens: 960_000  # 3_200_000              # 200s @ 16kHz
+
+criterion:
+  _name: label_smoothed_cross_entropy
+  report_accuracy: True
+  ignore_prefix_size: 1
+
+optimization:
+  lr: [2e-3]
+  update_freq: [8]
+  max_update: 100000
+  clip_norm: 10.0
+
+optimizer:
+  _name: adam
+
+lr_scheduler:
+  _name: inverse_sqrt
+  warmup_updates: 10000
+
+model:
+  _name: wav2vec_seq2seq_ext
+  w2v_path: ???
+  normalize: True
+  autoregressive: True
+
+  freeze_layers: encoder.feat_extr,encoder.ffn,decoder.embedding,decoder.self_attn,decoder.ffn
+  len_adaptor_kernel_sizes: 3,3,3
+  len_adaptor_channels: 1024
+
+  decoder_embed_dim: 1024
+  decoder_output_dim: 1024
+  decoder_ffn_embed_dim: 4096
+  decoder_layers: 12
+  decoder_attention_heads: 16
+  decoder_learned_pos: True
+  decoder_normalize_before: True
+  decoder_dropout: 0.3
+  decoder_attention_dropout: 0.1
+  decoder_activation_dropout: 0.0
+  share_decoder_input_output_embed: True
+  max_target_positions: "${task.max_target_positions}"
