@@ -28,11 +28,27 @@ mkdir -p ${MUSTC_ROOT} && wget http://ftp.scc.kit.edu/pub/mirror/IAR/MUSTC_v2.0_
 ### CoVoST
 [Download](https://commonvoice.mozilla.org/en/datasets) the English split from Common Voice v4. Unpack it to `${COVOST_ROOT}/en/`.
 
+This dataset contains MP3 files at 48 kHz. We need to convert them to WAV to load them with the fairseq speech_to_text modules. Moreover, we'll need resample them to 16 kHz, which is the sample rate needed by Wav2Vec.
+
+```bash
+for f in ${COVOST_ROOT}/*/clips/*.mp3; do
+    ffmpeg -i $f -ar 16000 -hide_banner -loglevel error "${f%.mp3}.wav" && rm $f
+done
+sed 's/\.mp3\t/\.wav\t/g' ${COVOST_ROOT}/**/*.tsv
+```
+
+
 ### Europarl-ST
 Download Europarl-ST v1.1 to `$EUROPARLST_ROOT`:
 ```bash
 mkdir -p ${EUROPARLST_ROOT} && wget https://www.mllp.upv.es/europarl-st/v1.1.tar.gz -O - | tar -xz --strip-components 1 -C ${EUROPARLST_ROOT}
 ```
 
+This dataset contains M4A files at 44.1 kHz. As we did with CoVoST, we need to convert them to WAV and resample them to 16 kHz.
 
+```bash
+for f in ${EUROPARLST_ROOT}/*/audios/*.m4a; do
+    ffmpeg -i $f -ar 16000 -hide_banner -loglevel error "${f%.m4a}.wav" && rm $f
+done
+```
 
