@@ -17,6 +17,20 @@ git clone -b tmp https://github.com/gegallego/fairseq.git ${FAIRSEQ_ROOT} && \
 pip install --editable ${FAIRSEQ_ROOT}
 ```
 
+## Pre-trained models
+In this project we use a pre-trained Wav2Vec 2.0 encoder and a pre-trained mBART decoder.
+
+Download the "Wav2Vec 2.0 Large (LV-60) + Self Training" version:
+```bash
+wget https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_960h_pl.pt -P ${WAV2VEC_ROOT}
+```
+
+Download the "mBART 50 finetuned one-to-many" version:
+```bash
+mkdir -p ${MBART_ROOT} && wget https://dl.fbaipublicfiles.com/fairseq/models/mbart50/mbart50.ft.1n.tar.gz -O - | tar -xz --strip-components 1 -C ${MBART_ROOT}
+```
+
+
 ## Data Preparation
 
 ### MuST-C
