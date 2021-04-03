@@ -39,6 +39,34 @@ Download MuST-C v2 to `$MUSTC_ROOT`:
 mkdir -p ${MUSTC_ROOT} && wget http://ftp.scc.kit.edu/pub/mirror/IAR/MUSTC_v2.0_en-de.tar.gz -O - | tar -xz -C ${MUSTC_ROOT}
 ```
 
+Copy the mBART vocabulary to `$MUSTC_ROOT/en-de/`.
+```bash
+cp $MBART_ROOT/dict.en_XX.txt $MUSTC_ROOT/en-de/spm_bpe250000_asr.txt
+cp $MBART_ROOT/dict.de_DE.txt $MUSTC_ROOT/en-de/spm_bpe250000_st.txt
+cp $MBART_ROOT/sentence.bpe.model $MUSTC_ROOT/en-de/spm_bpe250000_asr.model
+cp $MBART_ROOT/sentence.bpe.model $MUSTC_ROOT/en-de/spm_bpe250000_st.model
+```
+
+You also need to add some extra tokens to the dictionary:
+```bash
+cat $MBART_ROOT/ML50_langs.txt | cut -d'_' -f1 | sed 's/^/<lang:/g' | sed 's/$/> 1/g' >> $MUSTC_ROOT/en-de/spm_bpe250000_asr.txt && \
+echo "<mask> 1" >> $MUSTC_ROOT/en-de/spm_bpe250000_asr.txt
+
+cat $MBART_ROOT/ML50_langs.txt | cut -d'_' -f1 | sed 's/^/<lang:/g' | sed 's/$/> 1/g' >> $MUSTC_ROOT/en-de/spm_bpe250000_st.txt && \
+echo "<mask> 1" >> $MUSTC_ROOT/en-de/spm_bpe250000_st.txt
+```
+
+Run the scripts that will generate the TSV files.
+```bash
+python $FAIRSEQ_ROOT/examples/speech_to_text/prep_mustc_data.py \
+  --data-root $MUSTC_ROOT --task asr --vocab-type bpe \
+  --vocab-size 250000 --use-audio-input --prepend-tgt-lang-tag
+
+python $FAIRSEQ_ROOT/examples/speech_to_text/prep_mustc_data.py \
+  --data-root $MUSTC_ROOT --task st --vocab-type bpe \
+  --vocab-size 250000 --use-audio-input --prepend-tgt-lang-tag
+```
+
 ### CoVoST
 [Download](https://commonvoice.mozilla.org/en/datasets) the English split from Common Voice v4. Unpack it to `${COVOST_ROOT}/en/`.
 
@@ -49,6 +77,34 @@ for f in ${COVOST_ROOT}/*/clips/*.mp3; do
     ffmpeg -i $f -ar 16000 -hide_banner -loglevel error "${f%.mp3}.wav" && rm $f
 done
 sed 's/\.mp3\t/\.wav\t/g' ${COVOST_ROOT}/**/*.tsv
+```
+
+Copy the mBART vocabulary to `$COVOST_ROOT/en/`.
+```bash
+cp $MBART_ROOT/dict.en_XX.txt $COVOST_ROOT/en/spm_bpe250000_asr_en.txt
+cp $MBART_ROOT/dict.de_DE.txt $COVOST_ROOT/en/spm_bpe250000_st_en_de.txt
+cp $MBART_ROOT/sentence.bpe.model $COVOST_ROOT/en/spm_bpe250000_asr_en.model
+cp $MBART_ROOT/sentence.bpe.model $COVOST_ROOT/en/spm_bpe250000_st_en_de.model
+```
+
+You also need to add some extra tokens to the dictionary:
+```bash
+cat $MBART_ROOT/ML50_langs.txt | cut -d'_' -f1 | sed 's/^/<lang:/g' | sed 's/$/> 1/g' >> $COVOST_ROOT/en/spm_bpe250000_asr_en.txt && \
+echo "<mask> 1" >> $COVOST_ROOT/en/spm_bpe250000_asr_en.txt
+
+cat $MBART_ROOT/ML50_langs.txt | cut -d'_' -f1 | sed 's/^/<lang:/g' | sed 's/$/> 1/g' >> $COVOST_ROOT/en/spm_bpe250000_st_en_de.txt && \
+echo "<mask> 1" >> $COVOST_ROOT/en/spm_bpe250000_st_en_de.txt
+```
+
+Run the scripts that will generate the TSV files.
+```bash
+python $FAIRSEQ_ROOT/examples/speech_to_text/prep_covost_data.py \
+  --data-root $COVOST_ROOT --vocab-type bpe --vocab-size 250000 \
+  --src-lang en --use-audio-input --prepend-tgt-lang-tag
+
+python $FAIRSEQ_ROOT/examples/speech_to_text/prep_covost_data.py \
+  --data-root $COVOST_ROOT --vocab-type bpe --vocab-size 250000 \
+  --src-lang en --tgt-lang de --use-audio-input --prepend-tgt-lang-tag
 ```
 
 
@@ -64,5 +120,35 @@ This dataset contains M4A files at 44.1 kHz. As we did with CoVoST, we need to c
 for f in ${EUROPARLST_ROOT}/*/audios/*.m4a; do
     ffmpeg -i $f -ar 16000 -hide_banner -loglevel error "${f%.m4a}.wav" && rm $f
 done
+```
+
+Copy the mBART vocabulary to `$EUROPARLST_ROOT/en/`.
+```bash
+cp $MBART_ROOT/dict.en_XX.txt $EUROPARLST_ROOT/en/spm_bpe250000_en-de_asr.txt
+cp $MBART_ROOT/dict.de_DE.txt $EUROPARLST_ROOT/en/spm_bpe250000_en-de_st.txt
+cp $MBART_ROOT/sentence.bpe.model $EUROPARLST_ROOT/en/spm_bpe250000_en-de_asr.txt
+cp $MBART_ROOT/sentence.bpe.model $EUROPARLST_ROOT/en/spm_bpe250000_en-de_st.model
+```
+
+You also need to add some extra tokens to the dictionary:
+```bash
+cat $MBART_ROOT/ML50_langs.txt | cut -d'_' -f1 | sed 's/^/<lang:/g' | sed 's/$/> 1/g' >> $EUROPARLST_ROOT/en/spm_bpe250000_en-de_asr.txt && \
+echo "<mask> 1" >> $EUROPARLST_ROOT/en/spm_bpe250000_en-de_asr.txt
+
+cat $MBART_ROOT/ML50_langs.txt | cut -d'_' -f1 | sed 's/^/<lang:/g' | sed 's/$/> 1/g' >> $EUROPARLST_ROOT/en/spm_bpe250000_en-de_st.txt && \
+echo "<mask> 1" >> $EUROPARLST_ROOT/en/spm_bpe250000_en-de_st.txt
+```
+
+Run the scripts that will generate the TSV files.
+```bash
+python $FAIRSEQ_ROOT/examples/speech_to_text/prep_europarlst_data.py \
+  --data-root $EUROPARLST_ROOT --lang-pair en-de --task asr \
+  --vocab-type bpe --vocab-size 2500000 \
+  --use-audio-input --prepend-tgt-lang-tag
+
+python $FAIRSEQ_ROOT/examples/speech_to_text/prep_europarlst_data.py \
+  --data-root $EUROPARLST_ROOT --lang-pair en-de --task st \
+  --vocab-type bpe --vocab-size 2500000 \
+  --use-audio-input --prepend-tgt-lang-tag
 ```
 
