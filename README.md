@@ -152,3 +152,16 @@ python $FAIRSEQ_ROOT/examples/speech_to_text/prep_europarlst_data.py \
   --use-audio-input --prepend-tgt-lang-tag
 ```
 
+## Data Preparation
+
+Run the filtering script to produce a clean version of a dataset.
+The script takes as input the path of the dataset, reads the (train split) TSV files
+for the two tasks (ASR and ST) and produces two new TSV files. The cleaner can optionally
+run an ASR system (asr_inference.py) to remove noisy and potential inconsitent examples.
+PS: Tested it for MuST-C for now. Will run it for the other two when we have the data,
+but since their TSV files are in the same format, should be fine.
+
+```bash
+python $scripts/filtering/filter_tsv.py \
+  --tsv_root $MUSTC_ROOT/en-de --duration_sec_threshold 30 \
+  --apply_asr_filtering --asr_batch_size 24 --asr_wer_threshold 0.5
