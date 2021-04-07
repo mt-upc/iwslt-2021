@@ -143,12 +143,12 @@ Run the scripts that will generate the TSV files.
 ```bash
 python $FAIRSEQ_ROOT/examples/speech_to_text/prep_europarlst_data.py \
   --data-root $EUROPARLST_ROOT --lang-pair en-de --task asr \
-  --vocab-type bpe --vocab-size 2500000 \
+  --vocab-type bpe --vocab-size 250000 \
   --use-audio-input --prepend-tgt-lang-tag
 
 python $FAIRSEQ_ROOT/examples/speech_to_text/prep_europarlst_data.py \
   --data-root $EUROPARLST_ROOT --lang-pair en-de --task st \
-  --vocab-type bpe --vocab-size 2500000 \
+  --vocab-type bpe --vocab-size 250000 \
   --use-audio-input --prepend-tgt-lang-tag
 ```
 
