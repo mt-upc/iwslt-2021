@@ -2,6 +2,13 @@
 Systems submitted to IWSLT 2021 by the MT-UPC group.
 
 ## Setting up the environment
+
+Set the environment variables:
+```bash
+export IWSLT_ROOT=...        # where you'll clone this repository
+export FAIRSEQ_ROOT=...      # where you'll clone our Fairseq fork
+```
+
 Clone this repository to `$IWSLT_ROOT`:
 ```bash
 git clone https://github.com/mt-upc/iwslt-2021.git ${IWSLT_ROOT} 
@@ -20,6 +27,12 @@ pip install --editable ${FAIRSEQ_ROOT}
 ## Pre-trained models
 In this project we use a pre-trained Wav2Vec 2.0 encoder and a pre-trained mBART decoder.
 
+Set the environment variables:
+```bash
+export WAV2VEC_ROOT=...      # where you'll download the Wav2Vec checkpoint
+export MBART_ROOT=...        # where you'll download the mBART checkpoint
+```
+
 Download the "Wav2Vec 2.0 Large (LV-60) + Self Training" version:
 ```bash
 wget https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_960h_pl.pt -P ${WAV2VEC_ROOT}
@@ -34,6 +47,13 @@ wget https://dl.fbaipublicfiles.com/fairseq/models/mbart50/mbart50.ft.1n.tar.gz 
 
 
 ## Datasets
+Set the environment variables:
+```bash
+export MUSTC_ROOT=...        # where you'll download MuST-C data
+export COVOST_ROOT=...       # where you'll download CoVoST data
+export EUROPARLST_ROOT=...   # where you'll download Europarl-ST data
+export DATA_ROOT=...         # where you'll combine the datasets
+```
 
 ### Download
 
@@ -158,3 +178,24 @@ python scripts/filtering/filter_tsv.py \
 python scripts/filtering/filter_tsv.py \
   --dataset_name EUROPARLST --tsv_root $EUROPARLST_ROOT/en \
   --asr_batch_size 24 --asr_wer_threshold 0.5
+```
+
+### Merge
+Generate symlinks pointing to dataset files in `$DATA_ROOT`:
+```bash
+ln -s $MUSTC_ROOT/en-de/config_st.yaml $DATA_ROOT/config.yaml
+ln -s $MUSTC_ROOT/en-de/spm_bpe250000_st.{txt,model} $DATA_ROOT/
+
+ln -s $MUSTC_ROOT/en-de/train_st_filtered.tsv $DATA_ROOT/train_mustc.tsv
+ln -s $MUSTC_ROOT/en-de/dev_st.tsv $DATA_ROOT/dev_mustc.tsv
+ln -s $MUSTC_ROOT/en-de/tst-COMMON_st.tsv $DATA_ROOT/tst-COMMON_mustc.tsv
+ln -s $MUSTC_ROOT/en-de/tst-HE_st.tsv $DATA_ROOT/tst-HE_mustc.tsv
+
+ln -s $COVOST_ROOT/en/train_st_en_de_filtered.tsv $DATA_ROOT/train_covost.tsv
+ln -s $COVOST_ROOT/en/dev_st_en_de.tsv $DATA_ROOT/dev_covost.tsv
+ln -s $COVOST_ROOT/en/test_st_en_de.tsv $DATA_ROOT/test_covost.tsv
+
+ln -s $EUROPARLST_ROOT/en/train_en-de_st_filtered.tsv $DATA_ROOT/train_europarlst.tsv
+ln -s $EUROPARLST_ROOT/en/dev_en-de_st.tsv $DATA_ROOT/dev_europarlst.tsv
+ln -s $EUROPARLST_ROOT/en/test_en-de_st.tsv $DATA_ROOT/test_europarlst.tsv
+```

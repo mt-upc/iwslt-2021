@@ -4,15 +4,14 @@ common:
   seed: 1
 
 task:
-  _name: speech_to_text
+  _name: speech_to_text_iwslt21
   data: ???
-  data_config_yaml: config_st.yaml
   max_source_positions: 960_000   # 60s @ 16kHz
   max_target_positions: 1024
 
 dataset:
-  train_subset: train_st
-  valid_subset: dev_st
+  train_subset: train_mustc,train_covost,train_europarlst
+  valid_subset: dev_mustc,dev_covost,dev_europarlst
   num_workers: 6
   max_tokens: 960_000  # 3_200_000              # 200s @ 16kHz
 
