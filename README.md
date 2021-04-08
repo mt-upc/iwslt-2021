@@ -163,7 +163,7 @@ python scripts/filtering/filter_tsv.py \
   --dataset_name MUSTC --tsv_root $MUSTC_ROOT/en-de --asr_batch_size 24 --asr_wer_threshold 0.5
 
 python scripts/filtering/filter_tsv.py \
-  --dataset_name CoVoST --tsv_root $COVOST_ROOT/en --asr_batch_size 24 --asr_wer_threshold 0.5
-  
+  --dataset_name COVOST --tsv_root $COVOST_ROOT/en --asr_batch_size 24 --asr_wer_threshold 0.5
+
 python scripts/filtering/filter_tsv.py \
-  --dataset_name EuroparlST --tsv_root $EUROPARLST_ROOT/en --asr_batch_size 24 --asr_wer_threshold 0.5
+  --dataset_name EUROPARLST --tsv_root $EUROPARLST_ROOT/en --asr_batch_size 24 --asr_wer_threshold 0.5

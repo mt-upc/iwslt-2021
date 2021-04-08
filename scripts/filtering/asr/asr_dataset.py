@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 from torch.utils import data
-import torchaudio
 import string
 from num2words import num2words
-import soundfile
 import numpy as np
 from typing import List, Tuple
 from pathlib import Path
 import re
-from speech_to_text.data_utils import load_df_from_tsv
 
-torchaudio.set_audio_backend("soundfile")
+from audio.audio_utils import get_waveform
+from speech_to_text.data_utils import load_df_from_tsv
 
 
 class AsrDataset(data.Dataset):
@@ -43,13 +41,15 @@ class AsrDataset(data.Dataset):
         # load audio frame into 1-d numpy array
         if audio.count(":") > 1:
             wav_file_path, offset, num_frames = audio.rsplit(":", 2)
-            wav_array = torchaudio.load(
-                wav_file_path,
-                int(offset),
-                int(num_frames)
-            )[0][0].numpy()
+            offset, num_frames = int(offset), int(num_frames)
         else:
-            wav_array = torchaudio.load(audio)[0][0].numpy()
+            wav_file_path, offset, num_frames = audio, 0, -1
+
+        wav_array, _ = get_waveform(
+                wav_file_path,
+                start = int(offset),
+                frames = int(num_frames),
+                always_2d = False)
 
         # apply formatting to target text
         tgt_text = self._fix_format(tgt_text)

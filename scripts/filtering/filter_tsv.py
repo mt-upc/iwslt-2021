@@ -7,6 +7,7 @@ import os
 import warnings
 
 sys.path.append("./../fairseq/examples")
+sys.path.append("./../fairseq/fairseq/data")
 sys.path.append("scripts/filtering")
 
 from speech_to_text.data_utils import load_df_from_tsv, save_df_to_tsv
@@ -35,7 +36,7 @@ utterance_cleaner: Callable, asr_batch_size: int, asr_wer_threshold: float) -> p
     # removal of empty examples after cleaning
     empty_examples_bool = df.tgt_text == ""
     df = df.loc[~empty_examples_bool]
-    print(f"removed {empty_examples_bool.sum()} empty examples. remaing: {len(df)}")
+    print(f"removed {empty_examples_bool.sum()} empty examples. remaining: {len(df)}")
 
     # removal of noisy examples (based on ASR system predictions)
     if task == "st":
@@ -46,7 +47,7 @@ utterance_cleaner: Callable, asr_batch_size: int, asr_wer_threshold: float) -> p
 
         noisy_examples_bool = find_noisy_examples(df, asr_predictions_path, asr_wer_threshold)
         df = df.loc[~noisy_examples_bool]
-        print(f"removed {noisy_examples_bool.sum()} noisy examples. remaing: {len(df)}")
+        print(f"removed {noisy_examples_bool.sum()} noisy examples. remaining: {len(df)}")
 
     return df
 
@@ -67,11 +68,9 @@ def main():
     file_list = os.listdir(dataset_root)
 
     utterance_cleaner = CLEANER_FUNC[args.dataset_name]
+    asr_tsv_path = ""
 
     for task in TASKS:
-
-        # if multiple train splits are available
-        df_train, train_splits = pd.DataFrame(), []
 
         for split in SPLITS[args.dataset_name]:
 
@@ -86,35 +85,24 @@ def main():
                         break
 
             if not match:
-                warnings.warn(f"no file found for dataset = {args.dataset_name}, \
-                    task = {task}, split = {split}")
+                warnings.warn(f"no file found for dataset = {args.dataset_name}, task = {task}, split = {split}")
                 continue
 
-            if split.startswith("train"):
-
-                train_splits.append(split)
+            if split.startswith("train") and "noisy" not in split:
 
                 tsv_path = dataset_root / file_name
                 df_split = load_df_from_tsv(tsv_path)
 
-                if task == "asr":
-                    asr_tsv_path = tsv_path
-
-                print(f"Running filtering script for {split} split of \
-                    {args.dataset_name} from file {tsv_path}")
+                print(f"Running filtering script for {split} split of {args.dataset_name} from file {tsv_path}")
                 df_split_filtered = filter(df_split, asr_tsv_path, task, utterance_cleaner,
                     args.asr_batch_size, args.asr_wer_threshold)
 
-                df_train = df_train.append(df_split_filtered)
+                new_tsv_path = dataset_root / Path(tsv_path.stem + "_filtered.tsv")
+                save_df_to_tsv(df_split_filtered, new_tsv_path)
+                print(f"Saved filtered TSV for: {split} of {task} at: {new_tsv_path}")
 
-        new_tsv_path = dataset_root / Path(tsv_path.stem + "_filtered.tsv")
-        if len(train_splits) > 1:
-            new_tsv_path = Path(str(new_tsv_path).replace("train", "train_all"))
-        save_df_to_tsv(df_train, new_tsv_path)
-        print(f"Saved filtered TSV for: {train_splits} of {task} at: {new_tsv_path}")
-
-        if task == "asr":
-            asr_tsv_path = new_tsv_path
+                if task == "asr":
+                    asr_tsv_path = new_tsv_path
 
 
 if __name__ == "__main__":

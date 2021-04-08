@@ -106,17 +106,18 @@ def find_noisy_examples(df: pd.DataFrame, asr_predictions_file: Path,
 asr_wer_theshold: float) -> pd.Series:
 
     # to ensure removal of non-existent ids in both asr and st datasets
-    df["WER"] = 999.
-
-    ids = set(df.id.tolist())
+    df = df.assign(WER = 999)
 
     # fill-in WER results for each example
     with open(asr_predictions_file, "r") as file:
-        for line in file:
-            example = json.loads(line)
+        ids = [json.loads(line)["id"] for line in file]
+    with open(asr_predictions_file, "r") as file:
+        wer = [float(json.loads(line)["WER"]) for line in file]
 
-            if example["id"] in ids:
-                df.loc[df.id == example["id"], "WER"] = float(example["WER"])
+    ids_to_wer = dict(zip(ids, wer))
+
+    for index, row in df.iterrows():
+        df.loc[index, "WER"] = ids_to_wer.get(row.id, 999)
 
     noisy_examples_bool = df.WER > asr_wer_theshold
 
