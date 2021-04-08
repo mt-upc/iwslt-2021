@@ -37,7 +37,8 @@ def asr_inference(tsv_path: Path, batch_size: int) -> None:
     print(f"Loaded model and tokenizer: {MODEL_NAME}")
 
     if len(device_list) > 1:
-        model = torch.nn.DataParallel(model, device_ids = device_list, output_device = main_device)
+        model = torch.nn.DataParallel(model,
+            device_ids = device_list, output_device = main_device)
 
     model.to(main_device)
 
@@ -48,6 +49,8 @@ def asr_inference(tsv_path: Path, batch_size: int) -> None:
     if wer_path.is_file():
         with open(wer_path, "r") as file:
             completed_ids = [json.loads(line)["id"] for line in file]
+    else:
+        completed_ids = []
 
     # load dataset and initialize dataloader
     dataset = AsrDataset(tsv_path, completed_ids)
@@ -67,7 +70,8 @@ def asr_inference(tsv_path: Path, batch_size: int) -> None:
 
     # loop through the dataset
     with torch.no_grad():
-        for (ids, audio, tgt_text) in tqdm(iter(dataloader), miniters = 1000):
+        for (ids, audio, tgt_text) in tqdm(iter(dataloader),
+        miniters = len(dataloader) // 100):
 
             tokenized_audio = tokenizer(audio, return_tensors = "pt", padding = "longest")
             input_values = tokenized_audio.input_values.to(main_device)
@@ -97,15 +101,18 @@ def asr_inference(tsv_path: Path, batch_size: int) -> None:
             wer_sum += sum(wer_results)
             n_examples += len(wer_results)
 
+    if wer_sum != 0:
+        n_data = len(dataset)
+        total_time = time() - start_time
+        avg_proc_time = total_time / n_data
+        macro_wer = wer_sum / n_examples
 
-    n_data = len(dataset)
-    total_time = time() - start_time
-    avg_proc_time = total_time / n_data
-    macro_wer = wer_sum / n_examples
+        print(f"Finished inference for {n_data} datapoints in {total_time / 60} minutes")
+        print(f"Average processing time per datapoint = {avg_proc_time} seconds")
+        print(f"Macro-averaged WER = {macro_wer}")
 
-    print(f"Finished inference for {n_data} datapoints in {total_time / 60} minutes")
-    print(f"Average processing time per datapoint = {avg_proc_time} seconds")
-    print(f"Macro-averaged WER = {macro_wer}")
+    else:
+        print("Predictions file was already completed.")
 
 
 if __name__ == "__main__":

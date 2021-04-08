@@ -7,6 +7,18 @@ import nltk
 nltk.download("punkt")
 
 
+def general_utterance_cleaner(text: str) -> str:
+
+    # tabs, newlines and trailing spaces
+    text = re.sub(" +", " ", text.replace("\t", " ").replace("\n", " "))
+
+    # empty if it does not contain at least two consequitve letters (shortest word)
+    if len(re.findall('[a-zA-Z]{2}', text)) < 2:
+        text = ""
+
+    return text
+
+
 def clean_speaker_name(text: str) -> str:
     """
     Checks if the text starts with the pattern: [speaker name followed
@@ -30,7 +42,7 @@ def clean_speaker_name(text: str) -> str:
     return text
 
 
-def clean_mustc_utterance(text: str) -> str:
+def mustc_utterance_cleaner(text: str) -> str:
 
     event_pattern = r"\([^()]*\)"
 
@@ -63,17 +75,12 @@ def clean_mustc_utterance(text: str) -> str:
     # correct "&" symbol
     text = text.replace("& amp;", "&")
 
-    # tabs, newlines and trailing spaces
-    text = re.sub(" +", " ", text.replace("\t", " ").replace("\n", " "))
-
-    # empty if \s
-    if text == " ":
-        text = ""
+    text = general_utterance_cleaner(text)
 
     return text
 
 
-def clean_europarlst_utterance(text: str) -> str:
+def europarlst_utterance_cleaner(text: str) -> str:
 
     # Fixes spaces in numbers > 1000 with inclusing a comma (50 000 -> 50,000)
     # For consitency with MuST-C data
@@ -85,17 +92,13 @@ def clean_europarlst_utterance(text: str) -> str:
         else:
             search = False
 
-    # tabs, newlines and trailing spaces
-    text = re.sub(" +", " ", text.replace("\t", " ").replace("\n", " "))
-
-    # empty if \s
-    if text == " ":
-        text = ""
+    text = general_utterance_cleaner(text)
 
     return text
 
 
-def clean_covost_utterance(text: str) -> str:
+def covost_utterance_cleaner(text: str) -> str:
+    text = general_utterance_cleaner(text)
     return text
 
 

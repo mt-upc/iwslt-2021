@@ -41,13 +41,15 @@ class AsrDataset(data.Dataset):
         _id, audio, tgt_text = self.data.iloc[i][["id", "audio", "tgt_text"]]
 
         # load audio frame into 1-d numpy array
-        wav_file_path, offset, num_frames = audio.rsplit(":", 2)
-
-        wav_array = torchaudio.load(
-            wav_file_path,
-            int(offset),
-            int(num_frames)
-        )[0].numpy().squeeze(0)
+        if audio.count(":") > 1:
+            wav_file_path, offset, num_frames = audio.rsplit(":", 2)
+            wav_array = torchaudio.load(
+                wav_file_path,
+                int(offset),
+                int(num_frames)
+            )[0][0].numpy()
+        else:
+            wav_array = torchaudio.load(audio)[0][0].numpy()
 
         # apply formatting to target text
         tgt_text = self._fix_format(tgt_text)

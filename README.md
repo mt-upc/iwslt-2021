@@ -154,14 +154,16 @@ python $FAIRSEQ_ROOT/examples/speech_to_text/prep_europarlst_data.py \
 
 ## Data Filtering
 
-Run the filtering script to produce a clean version of a dataset.
-The script takes as input the path of the dataset, reads the (train split) TSV files
-for the two tasks (ASR and ST) and produces two new TSV files. The cleaner can optionally
-run an ASR system (asr_inference.py) to remove noisy and potential inconsitent examples.
-PS: Tested it for MuST-C for now. Will run it for the other two when we have the data,
-but since their TSV files are in the same format, should be fine.
+Run the filtering script to produce a clean version of a dataset. The script does:
+(A) Text filtering by formatting the target text of an example and removal of empty examples after text filtering.
+(B) Noise filtering by removing completelly an example based on predictions form an ASR system.
 
 ```bash
 python scripts/filtering/filter_tsv.py \
-  --tsv_root $MUSTC_ROOT/en-de --duration_sec_threshold 30 \
-  --apply_asr_filtering --asr_batch_size 24 --asr_wer_threshold 0.5
+  --dataset_name MUSTC --tsv_root $MUSTC_ROOT/en-de --asr_batch_size 24 --asr_wer_threshold 0.5
+
+python scripts/filtering/filter_tsv.py \
+  --dataset_name CoVoST --tsv_root $COVOST_ROOT/en --asr_batch_size 24 --asr_wer_threshold 0.5
+  
+python scripts/filtering/filter_tsv.py \
+  --dataset_name EuroparlST --tsv_root $EUROPARLST_ROOT/en --asr_batch_size 24 --asr_wer_threshold 0.5
