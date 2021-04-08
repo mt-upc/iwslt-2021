@@ -108,16 +108,18 @@ asr_wer_theshold: float) -> pd.Series:
     # to ensure removal of non-existent ids in both asr and st datasets
     df = df.assign(WER = 999)
 
-    # fill-in WER results for each example
+    # read results
     with open(asr_predictions_file, "r") as file:
         ids = [json.loads(line)["id"] for line in file]
     with open(asr_predictions_file, "r") as file:
         wer = [float(json.loads(line)["WER"]) for line in file]
-
     ids_to_wer = dict(zip(ids, wer))
 
+    # fill-in values
     for index, row in df.iterrows():
         df.loc[index, "WER"] = ids_to_wer.get(row.id, 999)
+
+    df = df.drop("WER", axis = 0)
 
     noisy_examples_bool = df.WER > asr_wer_theshold
 
