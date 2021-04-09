@@ -40,7 +40,7 @@ BLOCKS2REGEX = {
 
 
 @dataclass
-class Wav2Vec2Seq2SeqExtConfig(Wav2Vec2Seq2SeqConfig):
+class Wav2Vec2Seq2SeqModConfig(Wav2Vec2Seq2SeqConfig):
     freeze_layers: str = field(
         default="",
         metadata={"help": "finetune only LayerNorm and Attention (LNA) layers"}
@@ -64,11 +64,11 @@ class Wav2Vec2Seq2SeqExtConfig(Wav2Vec2Seq2SeqConfig):
     )
 
 
-@register_model("wav2vec_seq2seq_ext", dataclass=Wav2Vec2Seq2SeqExtConfig)
-class Wav2Vec2Seq2SeqExtModel(Wav2Vec2Seq2SeqModel):
+@register_model("wav2vec_seq2seq_iwslt21", dataclass=Wav2Vec2Seq2SeqModConfig)
+class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
     """
-    Extended version of the wav2vec_seq2seq model.
-    
+    Modified version of the wav2vec_seq2seq model.
+
     It adds these functionalities:
       - Use with the speech_to_text pipeline
       - Loading pretrained decoder
@@ -80,7 +80,7 @@ class Wav2Vec2Seq2SeqExtModel(Wav2Vec2Seq2SeqModel):
         self.len_adaptor = len_adaptor
 
     @classmethod
-    def build_model(cls, cfg: Wav2Vec2Seq2SeqExtConfig, task: FairseqTask):
+    def build_model(cls, cfg: Wav2Vec2Seq2SeqModConfig, task: FairseqTask):
         """Build a new model instance."""
 
         def build_embedding(dictionary, embed_dim):
@@ -95,12 +95,12 @@ class Wav2Vec2Seq2SeqExtModel(Wav2Vec2Seq2SeqModel):
         decoder = cls.build_decoder(cfg, task.tgt_dict, decoder_embed_tokens)
         len_adaptor = cls.build_len_adaptor(cfg)
 
-        model = Wav2Vec2Seq2SeqExtModel(encoder, decoder, len_adaptor)
+        model = Wav2Vec2Seq2SeqModModel(encoder, decoder, len_adaptor)
         model.freeze_blocks(cfg)
         return model
 
     @classmethod
-    def build_decoder(cls, cfg: Wav2Vec2Seq2SeqExtConfig, tgt_dict, embed_tokens):
+    def build_decoder(cls, cfg: Wav2Vec2Seq2SeqModConfig, tgt_dict, embed_tokens):
         decoder = TransformerDecoderMod(cfg, tgt_dict, embed_tokens)
         if getattr(cfg, "load_pretrained_decoder_from", None):
             decoder = checkpoint_utils.load_pretrained_component_from_model(
@@ -113,7 +113,7 @@ class Wav2Vec2Seq2SeqExtModel(Wav2Vec2Seq2SeqModel):
         return decoder
 
     @classmethod
-    def build_len_adaptor(cls, cfg: Wav2Vec2Seq2SeqExtConfig):
+    def build_len_adaptor(cls, cfg: Wav2Vec2Seq2SeqModConfig):
         len_adaptor = Conv1dSubsampler(
             cfg.w2v_args.model.encoder_embed_dim,
             cfg.len_adaptor_channels,
@@ -152,7 +152,7 @@ class Wav2Vec2Seq2SeqExtModel(Wav2Vec2Seq2SeqModel):
         model.freeze_blocks(model_cfg)
         return model
 
-    def freeze_blocks(self, cfg: Wav2Vec2Seq2SeqExtConfig):
+    def freeze_blocks(self, cfg: Wav2Vec2Seq2SeqModConfig):
         regex_to_freeze = re.compile(
             "|".join([BLOCKS2REGEX[b] for b in cfg.freeze_layers.split(',')])
         )
@@ -165,7 +165,7 @@ class TransformerDecoderMod(TransformerDecoder):
     """
     Modification of the TransformerDecoder
 
-    It is adapted to the argument names defined in Wav2Vec2Seq2SeqExtConfig. 
+    It is adapted to the argument names defined in Wav2Vec2Seq2SeqModConfig.
     """
     def __init__(self, cfg, dictionary, embed_tokens, no_encoder_attn=False):
         transformer_cfg = copy.deepcopy(cfg)

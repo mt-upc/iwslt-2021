@@ -34,7 +34,7 @@ lr_scheduler:
   warmup_updates: 10000
 
 model:
-  _name: wav2vec_seq2seq_ext
+  _name: wav2vec_seq2seq_iwslt21
   w2v_path: ???
   normalize: True
   autoregressive: True

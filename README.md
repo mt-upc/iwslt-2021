@@ -38,6 +38,11 @@ Download the "Wav2Vec 2.0 Large (LV-60) + Self Training" version:
 wget https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_960h_pl.pt -P ${WAV2VEC_ROOT}
 ```
 
+It is necessary to make a few preparations to load this checkpoint into our model:
+```bash
+python ./scripts/prepare_wav2vec.py --checkpoint $WAV2VEC_ROOT/wav2vec_vox_960h_pl.pt
+```
+
 Download the "mBART 50 finetuned one-to-many" version:
 ```bash
 mkdir -p ${MBART_ROOT} && \
@@ -198,4 +203,22 @@ ln -s $COVOST_ROOT/en/test_st_en_de.tsv $DATA_ROOT/test_covost.tsv
 ln -s $EUROPARLST_ROOT/en/train_en-de_st_filtered.tsv $DATA_ROOT/train_europarlst.tsv
 ln -s $EUROPARLST_ROOT/en/dev_en-de_st.tsv $DATA_ROOT/dev_europarlst.tsv
 ln -s $EUROPARLST_ROOT/en/test_en-de_st.tsv $DATA_ROOT/test_europarlst.tsv
+```
+
+## Training
+Set the environment variables:
+```bash
+export SAVE_DIR=...          # where the checkpoints will be saved
+```
+
+Run the following command to train the model:
+```bash
+fairseq-hydra-train \
+  task.data=${DATA_ROOT} \
+  checkpoint.save_dir=${SAVE_DIR} \
+  model.w2v_path=${WAV2VEC_ROOT}/wav2vec_vox_960h_pl.pt \
+  +model.load_pretrained_decoder_from=${MBART_ROOT}/model.pt \
+  common.user_dir=${IWSLT_ROOT}/fairseq_modules/ \
+  --config-dir ${IWSLT_ROOT}/config/ \
+  --config-name mustc-wav2vec-st.yaml
 ```
