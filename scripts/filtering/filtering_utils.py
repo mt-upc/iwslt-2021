@@ -119,8 +119,6 @@ asr_wer_theshold: float) -> pd.Series:
     for index, row in df.iterrows():
         df.loc[index, "WER"] = ids_to_wer.get(row.id, 999)
 
-    df = df.drop("WER", axis = 0)
-
     noisy_examples_bool = df.WER > asr_wer_theshold
 
     return noisy_examples_bool
