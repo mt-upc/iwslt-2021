@@ -14,8 +14,9 @@ class DataAugmentationDataset(BaseWrapperDataset):
 
     def __init__(self,
     dataset: FairseqDataset,
-    effects_params: Dict[str, Union[float, List[float]]],
+    effects_param_ranges: Dict[str, List[Union[int, float]]],
     p_augm: float,
+    time_drop_len: int,
     segm_len: int) -> None:
 
         super(DataAugmentationDataset, self).__init__(dataset)
@@ -26,19 +27,19 @@ class DataAugmentationDataset(BaseWrapperDataset):
         self.info = {"rate": self.sr}
         
         self.p_augm = p_augm
+        self.time_drop_len = time_drop_len
         self.segm_len = segm_len
 
-        self.effects_info = effects_params
-        self.all_effects = self.effects_info.keys()
+        self.effects_param_ranges = effects_param_ranges
 
         self.echo_gain_in = ECHO_GAIN_IN
         self.echo_gain_out = ECHO_GAIN_OUT
 
         # set up random parameter generators
-        rnd_pitch_value = lambda: np.random.randint(*self.effects_info["pitch"])
-        rnd_tempo_factor = lambda: np.random.uniform(*self.effects_info["tempo"])
-        rnd_echo_delay_value = lambda: np.random.randint(*self.effects_info["echo_delay"])
-        rnd_echo_decay_factor = lambda: np.random.uniform(*self.effects_info["echo_decay"])
+        rnd_pitch_value = lambda: np.random.randint(*self.effects_param_ranges["pitch"])
+        rnd_tempo_factor = lambda: np.random.uniform(*self.effects_param_ranges["tempo"])
+        rnd_echo_delay_value = lambda: np.random.randint(*self.effects_param_ranges["echo_delay"])
+        rnd_echo_decay_factor = lambda: np.random.uniform(*self.effects_param_ranges["echo_decay"])
 
         # create general effect chain with randomizable parameters
         self.general_augm_chain = EffectChain().pitch(rnd_pitch_value()).rate(self.sr). \
@@ -46,7 +47,7 @@ class DataAugmentationDataset(BaseWrapperDataset):
             rnd_echo_delay_value, rnd_echo_decay_factor)
 
         # create effect chain for segments
-        self.segment_augm_chain = EffectChain().time_dropout(max_frames = self.effects_info["time_dropout"])
+        self.segment_augm_chain = EffectChain().time_dropout(max_frames = self.time_drop_len)
 
 
     def __getitem__(self, index: int) -> Tuple[str, torch.tensor, torch.tensor]:
@@ -82,7 +83,7 @@ class DataAugmentationDataset(BaseWrapperDataset):
 
             # adjust length of time dropout to the size of the small example
             reduced_segment_aug_chain = EffectChain().time_dropout(
-                max_frames = n_frames / self.segm_len * self.effects_info["time_dropout"])
+                max_frames = n_frames / self.segm_len * self.time_drop_len)
 
             input_tensor = reduced_segment_aug_chain.apply(input_tensor,
                 src_info = self.info,

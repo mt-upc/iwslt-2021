@@ -1,4 +1,3 @@
-from omegaconf import II
 from dataclasses import dataclass, field
 
 from fairseq.data import ConcatDataset
@@ -65,7 +64,7 @@ class SpeechToTextModTask(SpeechToTextTask):
         super().__init__(cfg, tgt_dict)
 
         # effect parameters for data augmentation
-        self.effects_params = {
+        self.effects_param_ranges = {
             "tempo": list(map(float, cfg.da_tempo.split(","))),
             "pitch": list(map(int, cfg.da_pitch.split(","))),
             "echo_delay": list(map(int, cfg.da_echo_delay.split(","))),
@@ -87,7 +86,7 @@ class SpeechToTextModTask(SpeechToTextTask):
                 datasets.append(self.datasets.pop(s))
             self.datasets[split] = ConcatDataset(datasets, sample_ratios)
             self.datasets[split] = DataAugmentationDataset(
-                self.datasets[split], self.effects_params,
-                self.cfg.da_p_augm, self.cfg.da_segm_len)
+                self.datasets[split], self.effects_param_ranges,
+                self.cfg.da_p_augm, self.cfg.da_time_drop, self.cfg.da_segm_len)
         else:
             super().load_dataset(split, epoch, combine, **kwargs)
