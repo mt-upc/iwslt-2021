@@ -5,8 +5,12 @@ from typing import Optional
 from omegaconf import DictConfig, open_dict
 from dataclasses import dataclass, field
 
+import torch.nn as nn
+import torch.nn.functional as F
+
 from fairseq import checkpoint_utils
 from fairseq.tasks import FairseqTask
+from fairseq.modules import LayerNorm
 from fairseq.models import register_model
 from fairseq.models.transformer import TransformerDecoder
 from fairseq.models.wav2vec import (
@@ -35,6 +39,7 @@ BLOCKS2REGEX = {
     "decoder.layer_norm": r"decoder.*layer_norm.*",
     "decoder.encoder_attn": r"decoder.*\.encoder_attn\..*",
     "decoder.ffn": r"decoder.*\.fc[1-2]\..*",
+    "adapter": r"adapter.*",
     "len_adaptor": r"len_adaptor.*",
 }
 
@@ -44,6 +49,10 @@ class Wav2Vec2Seq2SeqModConfig(Wav2Vec2Seq2SeqConfig):
     freeze_layers: str = field(
         default="",
         metadata={"help": "finetune only LayerNorm and Attention (LNA) layers"}
+    )
+    adapter_dim: Optional[int] = field(
+        default=None,
+        metadata={"help": "projection size of the Adapter"}
     )
     len_adaptor_kernel_sizes: str = field(
         default="3,3",
@@ -75,8 +84,9 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
       - Finetuning only LNA layers
     """
 
-    def __init__(self, encoder, decoder, len_adaptor):
+    def __init__(self, encoder, decoder, adapter, len_adaptor):
         super().__init__(encoder, decoder)
+        self.adapter = adapter
         self.len_adaptor = len_adaptor
 
     @classmethod
@@ -93,9 +103,10 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
 
         encoder = cls.build_encoder(cfg)
         decoder = cls.build_decoder(cfg, task.tgt_dict, decoder_embed_tokens)
+        adapter = cls.build_adapter(cfg) if cfg.adapter_dim else None
         len_adaptor = cls.build_len_adaptor(cfg)
 
-        model = Wav2Vec2Seq2SeqModModel(encoder, decoder, len_adaptor)
+        model = Wav2Vec2Seq2SeqModModel(encoder, decoder, adapter, len_adaptor)
         model.freeze_blocks(cfg)
         return model
 
@@ -111,6 +122,14 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
                 f"{cfg.load_pretrained_decoder_from}"
             )
         return decoder
+
+    @classmethod
+    def build_adapter(cls, cfg: Wav2Vec2Seq2SeqModConfig):
+        adapter = Adapter(
+            cfg.w2v_args.model.encoder_embed_dim,
+            cfg.adapter_dim
+        )
+        return adapter
 
     @classmethod
     def build_len_adaptor(cls, cfg: Wav2Vec2Seq2SeqModConfig):
@@ -130,6 +149,11 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
             **kwargs
         )
         encoder_out["encoder_padding_mask"] = encoder_out.pop("padding_mask")
+        if self.adapter:
+            encoder_out["encoder_out"] = \
+                self.adapter(
+                    encoder_out["encoder_out"]
+                )
         encoder_out["encoder_out"], lengths = self.len_adaptor(
             encoder_out["encoder_out"],
             (~encoder_out["encoder_padding_mask"]).sum(dim=1)
@@ -187,3 +211,24 @@ class TransformerDecoderMod(TransformerDecoder):
     def load_state_dict(self, state_dict, strict=True):
         state_dict["output_projection.weight"] = state_dict["embed_tokens.weight"]
         super().load_state_dict(state_dict, strict)
+
+
+class Adapter(nn.Module):
+    """
+    Adapter for model finetuning, as described in:
+    https://arxiv.org/pdf/1909.08478.pdf
+    """
+    def __init__(self, embed_dim, proj_dim):
+        super().__init__()
+        self.layer_norm = LayerNorm(embed_dim)
+        self.down_proj = nn.Linear(embed_dim, proj_dim)
+        self.up_proj = nn.Linear(proj_dim, embed_dim)
+
+    def forward(self, x):
+        residual = x
+        x = self.layer_norm(x)
+        x = self.down_proj(x)
+        x = F.relu(x)
+        x = self.up_proj(x)
+        x += residual
+        return x
