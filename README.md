@@ -7,7 +7,6 @@ Set the environment variables:
 ```bash
 export IWSLT_ROOT=...        # where you'll clone this repository
 export FAIRSEQ_ROOT=...      # where you'll clone our Fairseq fork
-export AUGMENT_ROOT=...      # where you'll clone the WavAugment repository
 ```
 
 Clone this repository to `$IWSLT_ROOT`:
@@ -23,12 +22,6 @@ We have been working on some PR of Fairseq, but they have not been merged yet. C
 ```bash
 git clone -b tmp https://github.com/gegallego/fairseq.git ${FAIRSEQ_ROOT} && \
 pip install --editable ${FAIRSEQ_ROOT}
-```
-
-We are using the WavAugment library for data augmentation during training. Clone their repo and set it up.
-```bash
-git clone git@github.com:facebookresearch/WavAugment.git ${AUGMENT_ROOT} && \
-cd ${AUGMENT_ROOT} && python setup.py develop
 ```
 
 ## Pre-trained models
