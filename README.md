@@ -214,11 +214,6 @@ export SAVE_DIR=...          # where the checkpoints will be saved
 Run the following command to train the model:
 ```bash
 fairseq-hydra-train \
-  task.data=${DATA_ROOT} \
-  checkpoint.save_dir=${SAVE_DIR} \
-  model.w2v_path=${WAV2VEC_ROOT}/wav2vec_vox_960h_pl.pt \
-  +model.load_pretrained_decoder_from=${MBART_ROOT}/model.pt \
-  common.user_dir=${IWSLT_ROOT}/fairseq_modules/ \
   --config-dir ${IWSLT_ROOT}/config/ \
   --config-name mustc-wav2vec-st.yaml
 ```

@@ -2,10 +2,11 @@
 
 common:
   seed: 1
+  user_dir: ${env:IWSLT_ROOT}/fairseq_modules/
 
 task:
   _name: speech_to_text_iwslt21
-  data: ???
+  data: ${env:DATA_ROOT}
   max_source_positions: 960_000   # 60s @ 16kHz
   max_target_positions: 1024
 
@@ -19,6 +20,9 @@ criterion:
   _name: label_smoothed_cross_entropy
   report_accuracy: True
   ignore_prefix_size: 1
+
+checkpoint:
+  save_dir: ${env:SAVE_DIR}
 
 optimization:
   lr: [2e-3]
@@ -35,7 +39,8 @@ lr_scheduler:
 
 model:
   _name: wav2vec_seq2seq_iwslt21
-  w2v_path: ???
+  w2v_path: ${env:WAV2VEC_ROOT}/wav2vec_vox_960h_pl.pt
+  load_pretrained_decoder_from: ${env:MBART_ROOT}/model.pt
   normalize: True
   autoregressive: True
 
