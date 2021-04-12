@@ -7,8 +7,8 @@ import torch
 import torch.nn.functional as F
 
 SAMPLING_RATE = 16000
-ECHO_GAININ = 0.9
-ECHO_GAINOUT = 0.8
+ECHO_GAININ = 0.8
+ECHO_GAINOUT = 0.9
 
 
 class DataAugmentationDataset(BaseWrapperDataset):

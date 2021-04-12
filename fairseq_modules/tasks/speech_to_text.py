@@ -40,7 +40,7 @@ class SpeechToTextModTaskConfig(SpeechToTextTaskConfig):
     )
 
     da_echo_decay: str = field(
-        default="1,1",
+        default="0,0",
         metadata={"help": "The range from which to sample the echo decay factor during data augmentation."}
     )
 
