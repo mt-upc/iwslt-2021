@@ -10,10 +10,11 @@ task:
   data: ${env:DATA_ROOT}
   max_source_positions: 960_000   # 60s @ 16kHz
   max_target_positions: 1024
+  sample_ratios: 1,0.3,1,0.3,1
 
 dataset:
   train_subset: train_mustc,train_covost,train_europarlst,train_dev_covost,train_dev_europarlst
-  valid_subset: dev_mustc,dev_covost,dev_europarlst
+  valid_subset: dev_mustc
   num_workers: 6
   max_tokens: 960_000  # 3_200_000              # 200s @ 16kHz
 
