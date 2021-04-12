@@ -197,11 +197,11 @@ ln -s $MUSTC_ROOT/en-de/tst-COMMON_st.tsv $DATA_ROOT/tst-COMMON_mustc.tsv
 ln -s $MUSTC_ROOT/en-de/tst-HE_st.tsv $DATA_ROOT/tst-HE_mustc.tsv
 
 ln -s $COVOST_ROOT/en/train_st_en_de_filtered.tsv $DATA_ROOT/train_covost.tsv
-ln -s $COVOST_ROOT/en/dev_st_en_de.tsv $DATA_ROOT/dev_covost.tsv
+ln -s $COVOST_ROOT/en/dev_st_en_de_filtered.tsv $DATA_ROOT/train_dev_covost.tsv
 ln -s $COVOST_ROOT/en/test_st_en_de.tsv $DATA_ROOT/test_covost.tsv
 
 ln -s $EUROPARLST_ROOT/en/train_en-de_st_filtered.tsv $DATA_ROOT/train_europarlst.tsv
-ln -s $EUROPARLST_ROOT/en/dev_en-de_st.tsv $DATA_ROOT/dev_europarlst.tsv
+ln -s $EUROPARLST_ROOT/en/dev_en-de_st_filtered.tsv $DATA_ROOT/train_dev_europarlst.tsv
 ln -s $EUROPARLST_ROOT/en/test_en-de_st.tsv $DATA_ROOT/test_europarlst.tsv
 ```
 
