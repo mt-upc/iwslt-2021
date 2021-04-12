@@ -197,11 +197,11 @@ ln -s $MUSTC_ROOT/en-de/tst-COMMON_st.tsv $DATA_ROOT/tst-COMMON_mustc.tsv
 ln -s $MUSTC_ROOT/en-de/tst-HE_st.tsv $DATA_ROOT/tst-HE_mustc.tsv
 
 ln -s $COVOST_ROOT/en/train_st_en_de_filtered.tsv $DATA_ROOT/train_covost.tsv
-ln -s $COVOST_ROOT/en/dev_st_en_de.tsv $DATA_ROOT/dev_covost.tsv
+ln -s $COVOST_ROOT/en/dev_st_en_de_filtered.tsv $DATA_ROOT/train_dev_covost.tsv
 ln -s $COVOST_ROOT/en/test_st_en_de.tsv $DATA_ROOT/test_covost.tsv
 
 ln -s $EUROPARLST_ROOT/en/train_en-de_st_filtered.tsv $DATA_ROOT/train_europarlst.tsv
-ln -s $EUROPARLST_ROOT/en/dev_en-de_st.tsv $DATA_ROOT/dev_europarlst.tsv
+ln -s $EUROPARLST_ROOT/en/dev_en-de_st_filtered.tsv $DATA_ROOT/train_dev_europarlst.tsv
 ln -s $EUROPARLST_ROOT/en/test_en-de_st.tsv $DATA_ROOT/test_europarlst.tsv
 ```
 
@@ -209,11 +209,14 @@ ln -s $EUROPARLST_ROOT/en/test_en-de_st.tsv $DATA_ROOT/test_europarlst.tsv
 Set the environment variables:
 ```bash
 export SAVE_DIR=...          # where the checkpoints will be saved
+export TB_ROOT=...           # where you save the Tensorboard logs of your experiments
 ```
 
 Run the following command to train the model:
 ```bash
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
 fairseq-hydra-train \
   --config-dir ${IWSLT_ROOT}/config/ \
   --config-name mustc-wav2vec-st.yaml
 ```
+We used 4 GPUs and `update_freq=8`, which is equivalent to using 32 GPUs. Remember to keep `n_gpu·update_freq=32` if you use a different number of GPUs.

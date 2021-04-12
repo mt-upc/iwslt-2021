@@ -3,6 +3,7 @@
 common:
   seed: 1
   user_dir: ${env:IWSLT_ROOT}/fairseq_modules/
+  tensorboard_logdir: ${env:TB_ROOT}/iwslt21/
 
 task:
   _name: speech_to_text_iwslt21
@@ -15,10 +16,11 @@ task:
   da_pitch: -300,300
   da_echo_delay: 20,200
   da_echo_decay: 0.05,0.2
+  sample_ratios: 1,0.3,1,0.3,1
 
 dataset:
-  train_subset: train_mustc,train_covost,train_europarlst
-  valid_subset: dev_mustc,dev_covost,dev_europarlst
+  train_subset: train_mustc,train_covost,train_europarlst,train_dev_covost,train_dev_europarlst
+  valid_subset: dev_mustc
   num_workers: 6
   max_tokens: 960_000  # 3_200_000              # 200s @ 16kHz
 

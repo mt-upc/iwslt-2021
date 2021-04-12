@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from fairseq.data import ConcatDataset
+from fairseq.data import ConcatDataset, SubsampleDataset
 from fairseq.tasks import register_task
 from fairseq.tasks.speech_to_text import (
     SpeechToTextTask,
@@ -75,17 +75,30 @@ class SpeechToTextModTask(SpeechToTextTask):
             datasets = []
             splits = split.split(',')
             sample_ratios = \
-                [int(r) for r in self.cfg.sample_ratios.split(',')]
+                [float(r) for r in self.cfg.sample_ratios.split(',')]
             if sample_ratios == [1]:
                 sample_ratios = sample_ratios * len(splits)
             assert len(splits) == len(sample_ratios), \
                 "The nº of splits and sample_ratios must be equal."
-            for s in splits:
+            for s, r in zip(splits, sample_ratios):
                 super().load_dataset(s, epoch, combine, **kwargs)
-                datasets.append(self.datasets.pop(s))
-            self.datasets[split] = ConcatDataset(datasets, sample_ratios)
+                if 0 < r < 1:
+                    datasets.append(SubsampleDataset(self.datasets.pop(s), r))
+                else:
+                    datasets.append(self.datasets.pop(s))
+            upsample_ratios = [int(r) if r > 1 else 1 for r in sample_ratios]
+            self.datasets[split] = ConcatDataset(datasets, upsample_ratios)
             self.datasets[split] = DataAugmentationDataset(
                 self.datasets[split], self.da_effects_info,
                 self.cfg.da_p_augm, self.cfg.normalize)
         else:
             super().load_dataset(split, epoch, combine, **kwargs)
+
+    def begin_epoch(self, epoch, model):
+        super().begin_epoch(epoch, model)
+        if epoch == 1:
+            pass
+        for split in self.datasets.keys():
+            if split.startswith("train"):
+                # Perform a new subsampling at each epoch
+                self.load_dataset(split, epoch)
