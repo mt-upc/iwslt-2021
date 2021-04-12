@@ -97,7 +97,7 @@ class SpeechToTextModTask(SpeechToTextTask):
     def begin_epoch(self, epoch, model):
         super().begin_epoch(epoch, model)
         if epoch == 1:
-            pass
+            return
         for split in self.datasets.keys():
             if split.startswith("train"):
                 # Perform a new subsampling at each epoch
