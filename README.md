@@ -209,6 +209,7 @@ ln -s $EUROPARLST_ROOT/en/test_en-de_st.tsv $DATA_ROOT/test_europarlst.tsv
 Set the environment variables:
 ```bash
 export SAVE_DIR=...          # where the checkpoints will be saved
+export TB_ROOT=...           # where you save the Tensorboard logs of your experiments
 ```
 
 Run the following command to train the model:

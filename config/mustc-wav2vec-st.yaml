@@ -3,6 +3,7 @@
 common:
   seed: 1
   user_dir: ${env:IWSLT_ROOT}/fairseq_modules/
+  tensorboard_logdir: ${env:TB_ROOT}/iwslt21/
 
 task:
   _name: speech_to_text_iwslt21
