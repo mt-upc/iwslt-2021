@@ -4,50 +4,46 @@ from fairseq.data import BaseWrapperDataset, FairseqDataset
 import numpy as np
 from typing import Dict, List, Tuple, Union
 import torch
+import torch.nn.functional as F
 
 SAMPLING_RATE = 16000
-ECHO_GAIN_IN = 0.8
-ECHO_GAIN_OUT = 0.9
+ECHO_GAININ = 0.9
+ECHO_GAINOUT = 0.8
 
 
 class DataAugmentationDataset(BaseWrapperDataset):
 
     def __init__(self,
     dataset: FairseqDataset,
-    effects_param_ranges: Dict[str, List[Union[int, float]]],
+    effects_info: Dict[str, Union[List, Dict]],
     p_augm: float,
-    time_drop_len: int,
-    segm_len: int) -> None:
+    normalize: bool) -> None:
 
         super(DataAugmentationDataset, self).__init__(dataset)
 
         self.dataset = dataset
+        self.effects_info = effects_info
+        self.p_augm = p_augm
+        self.normalize = normalize
 
         self.sr = SAMPLING_RATE
+        self.echo_gainin = ECHO_GAININ
+        self.echo_gainout = ECHO_GAINOUT
+
         self.info = {"rate": self.sr}
-        
-        self.p_augm = p_augm
-        self.time_drop_len = time_drop_len
-        self.segm_len = segm_len
+            
+        self.avai_effects = []
+        if self.effects_info["tempo"][0] != self.effects_info["tempo"][1]:
+            self.avai_effects.append("tempo")
+        if self.effects_info["pitch"][0] != self.effects_info["pitch"][1]:
+            self.avai_effects.append("pitch")
+        cond_delay = self.effects_info["echo"]["delay"][0] != self.effects_info["echo"]["delay"][1]
+        cond_decay = self.effects_info["echo"]["decay"][0] != self.effects_info["echo"]["decay"][1]
+        if cond_delay and cond_decay:
+            self.avai_effects.append("echo")
 
-        self.effects_param_ranges = effects_param_ranges
-
-        self.echo_gain_in = ECHO_GAIN_IN
-        self.echo_gain_out = ECHO_GAIN_OUT
-
-        # set up random parameter generators
-        rnd_pitch_value = lambda: np.random.randint(*self.effects_param_ranges["pitch"])
-        rnd_tempo_factor = lambda: np.random.uniform(*self.effects_param_ranges["tempo"])
-        rnd_echo_delay_value = lambda: np.random.randint(*self.effects_param_ranges["echo_delay"])
-        rnd_echo_decay_factor = lambda: np.random.uniform(*self.effects_param_ranges["echo_decay"])
-
-        # create general effect chain with randomizable parameters
-        self.general_augm_chain = EffectChain().pitch(rnd_pitch_value()).rate(self.sr). \
-            tempo(rnd_tempo_factor()).echo(self.echo_gain_in, self.echo_gain_out,
-            rnd_echo_delay_value, rnd_echo_decay_factor)
-
-        # create effect chain for segments
-        self.segment_augm_chain = EffectChain().time_dropout(max_frames = self.time_drop_len)
+        # register effect chain function
+        self._create_effect_chain()
 
 
     def __getitem__(self, index: int) -> Tuple[str, torch.tensor, torch.tensor]:
@@ -55,18 +51,21 @@ class DataAugmentationDataset(BaseWrapperDataset):
         # (make sure input is a torch tensor)
         _id, input_tensor, target_tensor = self.dataset[index]
 
-        # apply general effects on the whole example (or keep the original example)
+        # apply effects or keep the original audiowave
         if np.random.rand() < self.p_augm:
-            input_tensor = self._apply_general_effects(input_tensor)
+            input_tensor = self._apply_effects(input_tensor)
 
-        # apply effects on segments
-        input_tensor = self._apply_segment_effects(input_tensor)
+        # normalize audiowave
+        if self.normalize:
+            with torch.no_grad():
+                input_tensor = F.layer_norm(input_tensor, input_tensor.shape)
 
         return (_id, input_tensor, target_tensor)
 
-    def _apply_general_effects(self, input_tensor: torch.tensor) -> torch.tensor:
+    def _apply_effects(self, input_tensor: torch.tensor) -> torch.tensor:
 
-        input_tensor_augm = self.general_augm_chain.apply(input_tensor,
+        # apply effects and reduce channel dimension that is created by default
+        input_tensor_augm = self.effect_chain.apply(input_tensor,
             src_info = self.info, target_info = self.info).squeeze(0)
 
         # sox might misbehave sometimes by giving nan/inf if sequences are too short (or silent)
@@ -75,26 +74,32 @@ class DataAugmentationDataset(BaseWrapperDataset):
         else:
             return input_tensor_augm
 
-    def _apply_segment_effects(self, input_tensor: torch.tensor) -> torch.tensor:
+    def _create_effect_chain(self) -> None:
 
-        n_frames = input_tensor.shape[0]
+        # init empty chain
+        self.effect_chain = EffectChain()
 
-        if n_frames < self.segm_len:
+        if "pitch" in self.avai_effects:
 
-            # adjust length of time dropout to the size of the small example
-            reduced_segment_aug_chain = EffectChain().time_dropout(
-                max_frames = n_frames / self.segm_len * self.time_drop_len)
+            def rnd_pitch_value() -> int:
+                return np.random.randint(*self.effects_info["pitch"])
 
-            input_tensor = reduced_segment_aug_chain.apply(input_tensor,
-                src_info = self.info,
-                target_info = self.info).squeeze(0)
+            self.effect_chain = self.effect_chain.pitch(rnd_pitch_value).rate(self.sr)
 
-        else:
+        if "tempo" in self.avai_effects:
 
-            for i in range(0, n_frames - self.segm_len, self.segm_len):
-                input_tensor[i: i + self.segm_len] = self.segment_augm_chain.apply(
-                    input_tensor[i: i + self.segm_len],
-                    src_info = self.info,
-                    target_info = self.info).squeeze(0)
+            def rnd_tempo_factor() -> float:
+                return np.random.uniform(*self.effects_info["tempo"])
 
-        return input_tensor
+            self.effect_chain = self.effect_chain.tempo(rnd_tempo_factor)
+
+        if "echo" in self.avai_effects:
+
+            def rnd_echo_delay() -> int:
+                return np.random.randint(*self.effects_info["echo"]["delay"])
+
+            def rnd_echo_decay() -> float:
+                return np.random.uniform(*self.effects_info["echo"]["decay"])
+
+            self.effect_chain = self.effect_chain.echo(
+                self.echo_gainin, self.echo_gainout, rnd_echo_delay, rnd_echo_decay)

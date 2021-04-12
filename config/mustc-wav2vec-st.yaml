@@ -9,6 +9,12 @@ task:
   data: ${env:DATA_ROOT}
   max_source_positions: 960_000   # 60s @ 16kHz
   max_target_positions: 1024
+  normalize: True
+  da_p_augm: 0.8
+  da_tempo: 0.85,1.3
+  da_pitch: -300,300
+  da_echo_delay: 20,200
+  da_echo_decay: 0.05,0.2
 
 dataset:
   train_subset: train_mustc,train_covost,train_europarlst
@@ -41,7 +47,6 @@ model:
   _name: wav2vec_seq2seq_iwslt21
   w2v_path: ${env:WAV2VEC_ROOT}/wav2vec_vox_960h_pl.pt
   load_pretrained_decoder_from: ${env:MBART_ROOT}/model.pt
-  normalize: True
   autoregressive: True
 
   freeze_layers: encoder.feat_extr,encoder.ffn,decoder.embedding,decoder.self_attn,decoder.ffn

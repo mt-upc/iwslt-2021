@@ -17,43 +17,36 @@ class SpeechToTextModTaskConfig(SpeechToTextTaskConfig):
         metadata={"help": "sample ratios of the train subsets"}
     )
 
-    da_time_drop: int = field(
-        default=1600,
-        metadata={"help": "The length of the the audio segments that are masked during data augmentation. \
-            Measured in frames."}
-    )
-
-    da_segm_len: int = field(
-        default=48000,
-        metadata={"help": "The length of the segment to which the time drop effect is applied. \
-            Measured in frames."}
-    )
-
     da_p_augm: float = field(
-        default="0.8",
+        default="1",
         metadata={"help": "The probability that data augmentation is applied to an example."}
     )
 
     da_tempo: str = field(
-        default="0.85,1.3",
+        default="1,1",
         metadata={"help": "The range from which to sample the tempo factor during data augmentation"}
     )
 
     da_pitch: str = field(
-        default="-300,300",
+        default="0,0",
         metadata={"help": "The range from which to sample the pitch value during data augmentation. \
             Measured in cents (i.e. 100ths of a semitone)"}
     )
 
     da_echo_delay: str = field(
-        default="20,200",
+        default="0,0",
         metadata={"help": "The range from which to sample the echo delay value during data augmentation. \
             Measured in milliseconds"}
     )
 
     da_echo_decay: str = field(
-        default="0.05,0.2",
+        default="1,1",
         metadata={"help": "The range from which to sample the echo decay factor during data augmentation."}
+    )
+
+    normalize: bool = field(
+        default=True,
+        metadata={"help": "Whether to normalize the audiowave to zero mean and unit variance."}
     )
 
 
@@ -64,12 +57,18 @@ class SpeechToTextModTask(SpeechToTextTask):
         super().__init__(cfg, tgt_dict)
 
         # effect parameters for data augmentation
-        self.effects_param_ranges = {
+        self.da_effects_info = {
             "tempo": list(map(float, cfg.da_tempo.split(","))),
             "pitch": list(map(int, cfg.da_pitch.split(","))),
-            "echo_delay": list(map(int, cfg.da_echo_delay.split(","))),
-            "echo_decay": list(map(float, cfg.da_echo_decay.split(",")))
+            "echo": {
+                "delay": list(map(int, cfg.da_echo_delay.split(","))),
+                "decay": list(map(float, cfg.da_echo_decay.split(",")))
+            }
         }
+
+        assert len(set(self.da_effects_info["echo"]["delay"])) == \
+            len(set(self.da_effects_info["echo"]["decay"])), \
+            "Specify ranges for both parameters of echo (delay & decay) or for none"
 
     def load_dataset(self, split, epoch=1, combine=False, **kwargs):
         if split.startswith("train"):
@@ -86,7 +85,7 @@ class SpeechToTextModTask(SpeechToTextTask):
                 datasets.append(self.datasets.pop(s))
             self.datasets[split] = ConcatDataset(datasets, sample_ratios)
             self.datasets[split] = DataAugmentationDataset(
-                self.datasets[split], self.effects_param_ranges,
-                self.cfg.da_p_augm, self.cfg.da_time_drop, self.cfg.da_segm_len)
+                self.datasets[split], self.da_effects_info,
+                self.cfg.da_p_augm, self.cfg.normalize)
         else:
             super().load_dataset(split, epoch, combine, **kwargs)

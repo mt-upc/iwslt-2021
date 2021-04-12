@@ -1,25 +1,25 @@
 import argparse
 from pathlib import Path
 from typing import Callable, Union
-import sys
 import pandas as pd
 import os
 import warnings
 
+import sys
 sys.path.append("./../fairseq/examples")
 sys.path.append("./../fairseq/fairseq/data")
 sys.path.append("scripts/filtering")
-
 from speech_to_text.data_utils import load_df_from_tsv, save_df_to_tsv
 from asr.asr_inference import asr_inference
 from filtering_utils import (find_noisy_examples, mustc_utterance_cleaner,
     europarlst_utterance_cleaner, covost_utterance_cleaner)
 
+
 DATASETS = ["MUSTC", "EUROPARLST", "COVOST"]
-SPLITS = {
-    "MUSTC": ["train", "dev", "tst-COMMON", "tst-HE"],
-    "EUROPARLST": ["train-noisy", "train", "dev", "test"],
-    "COVOST": ["train", "dev", "test"]}
+TRAIN_SPLITS = {
+    "MUSTC": ["train"],
+    "EUROPARLST": ["train", "dev"],
+    "COVOST": ["train", "dev"]}
 CLEANER_FUNC = {
     "MUSTC": mustc_utterance_cleaner,
     "EUROPARLST": europarlst_utterance_cleaner,
@@ -72,7 +72,7 @@ def main():
 
     for task in TASKS:
 
-        for split in SPLITS[args.dataset_name]:
+        for split in TRAIN_SPLITS[args.dataset_name]:
 
             # find the file for this (task, split) pair
             match = False
@@ -88,21 +88,19 @@ def main():
                 warnings.warn(f"no file found for dataset = {args.dataset_name}, task = {task}, split = {split}")
                 continue
 
-            if split.startswith("train") and "noisy" not in split:
+            tsv_path = dataset_root / file_name
+            df_split = load_df_from_tsv(tsv_path)
 
-                tsv_path = dataset_root / file_name
-                df_split = load_df_from_tsv(tsv_path)
+            print(f"Running filtering script for {split} split of {args.dataset_name} from file {tsv_path}")
+            df_split_filtered = filter(df_split, asr_tsv_path, task, utterance_cleaner,
+                args.asr_batch_size, args.asr_wer_threshold)
 
-                print(f"Running filtering script for {split} split of {args.dataset_name} from file {tsv_path}")
-                df_split_filtered = filter(df_split, asr_tsv_path, task, utterance_cleaner,
-                    args.asr_batch_size, args.asr_wer_threshold)
+            new_tsv_path = dataset_root / Path(tsv_path.stem + "_filtered.tsv")
+            save_df_to_tsv(df_split_filtered, new_tsv_path)
+            print(f"Saved filtered TSV for: {split} of {task} at: {new_tsv_path}")
 
-                new_tsv_path = dataset_root / Path(tsv_path.stem + "_filtered.tsv")
-                save_df_to_tsv(df_split_filtered, new_tsv_path)
-                print(f"Saved filtered TSV for: {split} of {task} at: {new_tsv_path}")
-
-                if task == "asr":
-                    asr_tsv_path = new_tsv_path
+            if task == "asr":
+                asr_tsv_path = new_tsv_path
 
 
 if __name__ == "__main__":
