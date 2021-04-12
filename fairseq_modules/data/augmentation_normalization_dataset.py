@@ -11,7 +11,7 @@ ECHO_GAININ = 0.8
 ECHO_GAINOUT = 0.9
 
 
-class DataAugmentationDataset(BaseWrapperDataset):
+class AugmentationNormalizationDataset(BaseWrapperDataset):
 
     def __init__(self,
     dataset: FairseqDataset,
@@ -19,7 +19,7 @@ class DataAugmentationDataset(BaseWrapperDataset):
     p_augm: float,
     normalize: bool) -> None:
 
-        super(DataAugmentationDataset, self).__init__(dataset)
+        super(AugmentationNormalizationDataset, self).__init__(dataset)
 
         self.dataset = dataset
         self.effects_info = effects_info
@@ -31,7 +31,8 @@ class DataAugmentationDataset(BaseWrapperDataset):
         self.echo_gainout = ECHO_GAINOUT
 
         self.info = {"rate": self.sr}
-            
+        
+        # add effects
         self.avai_effects = []
         if self.effects_info["tempo"][0] != self.effects_info["tempo"][1]:
             self.avai_effects.append("tempo")
@@ -42,10 +43,6 @@ class DataAugmentationDataset(BaseWrapperDataset):
         if cond_delay and cond_decay:
             self.avai_effects.append("echo")
 
-        # register effect chain function
-        self._create_effect_chain()
-
-
     def __getitem__(self, index: int) -> Tuple[str, torch.tensor, torch.tensor]:
 
         # (make sure input is a torch tensor)
@@ -53,19 +50,39 @@ class DataAugmentationDataset(BaseWrapperDataset):
 
         # apply effects or keep the original audiowave
         if np.random.rand() < self.p_augm:
-            input_tensor = self._apply_effects(input_tensor)
+            input_tensor = self._augment(input_tensor)
 
         # normalize audiowave
         if self.normalize:
-            with torch.no_grad():
-                input_tensor = F.layer_norm(input_tensor, input_tensor.shape)
+            input_tensor = self._normalize(input_tensor)
 
         return (_id, input_tensor, target_tensor)
 
-    def _apply_effects(self, input_tensor: torch.tensor) -> torch.tensor:
+    def _augment(self, input_tensor: torch.tensor) -> torch.tensor:
+
+        # init empty chain
+        effect_chain = EffectChain()
+
+        if "pitch" in self.avai_effects:
+
+            effect_chain = effect_chain.pitch(
+                np.random.randint(*self.effects_info["pitch"])).rate(self.sr)
+
+        if "tempo" in self.avai_effects:
+
+            effect_chain = effect_chain.tempo(
+                np.random.uniform(*self.effects_info["tempo"]))
+
+        if "echo" in self.avai_effects:
+
+            effect_chain = effect_chain.echo(
+                self.echo_gainin,
+                self.echo_gainout,
+                np.random.randint(*self.effects_info["echo"]["delay"]),
+                np.random.uniform(*self.effects_info["echo"]["decay"]))
 
         # apply effects and reduce channel dimension that is created by default
-        input_tensor_augm = self.effect_chain.apply(input_tensor,
+        input_tensor_augm = effect_chain.apply(input_tensor,
             src_info = self.info, target_info = self.info).squeeze(0)
 
         # sox might misbehave sometimes by giving nan/inf if sequences are too short (or silent)
@@ -74,32 +91,10 @@ class DataAugmentationDataset(BaseWrapperDataset):
         else:
             return input_tensor_augm
 
-    def _create_effect_chain(self) -> None:
+    def _normalize(self, input_tensor: torch.tensor) -> torch.tensor:
+        with torch.no_grad():
+            input_tensor = F.layer_norm(input_tensor, input_tensor.shape)
+        return input_tensor
 
-        # init empty chain
-        self.effect_chain = EffectChain()
-
-        if "pitch" in self.avai_effects:
-
-            def rnd_pitch_value() -> int:
-                return np.random.randint(*self.effects_info["pitch"])
-
-            self.effect_chain = self.effect_chain.pitch(rnd_pitch_value).rate(self.sr)
-
-        if "tempo" in self.avai_effects:
-
-            def rnd_tempo_factor() -> float:
-                return np.random.uniform(*self.effects_info["tempo"])
-
-            self.effect_chain = self.effect_chain.tempo(rnd_tempo_factor)
-
-        if "echo" in self.avai_effects:
-
-            def rnd_echo_delay() -> int:
-                return np.random.randint(*self.effects_info["echo"]["delay"])
-
-            def rnd_echo_decay() -> float:
-                return np.random.uniform(*self.effects_info["echo"]["decay"])
-
-            self.effect_chain = self.effect_chain.echo(
-                self.echo_gainin, self.echo_gainout, rnd_echo_delay, rnd_echo_decay)
+    def worker_init_fn(worker_id: int) -> None:
+        np.random.seed(np.random.get_state()[1][0] + worker_id)

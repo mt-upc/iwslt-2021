@@ -7,7 +7,7 @@ from fairseq.tasks.speech_to_text import (
     SpeechToTextTaskConfig,
 )
 
-from fairseq_modules.data.data_augmentation_dataset import DataAugmentationDataset
+from fairseq_modules.data.augmentation_normalization_dataset import AugmentationNormalizationDataset
 
 
 @dataclass
@@ -88,7 +88,7 @@ class SpeechToTextModTask(SpeechToTextTask):
                     datasets.append(self.datasets.pop(s))
             upsample_ratios = [int(r) if r > 1 else 1 for r in sample_ratios]
             self.datasets[split] = ConcatDataset(datasets, upsample_ratios)
-            self.datasets[split] = DataAugmentationDataset(
+            self.datasets[split] = AugmentationNormalizationDataset(
                 self.datasets[split], self.da_effects_info,
                 self.cfg.da_p_augm, self.cfg.normalize)
         else:
