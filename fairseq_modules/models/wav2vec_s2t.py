@@ -166,16 +166,6 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
         )
         return decoder_out
 
-    def load_state_dict(
-        self,
-        state_dict,
-        strict=True,
-        model_cfg: Optional[DictConfig] = None,
-    ):
-        model = super().load_state_dict(state_dict, strict, model_cfg)
-        model.freeze_blocks(model_cfg)
-        return model
-
     def freeze_blocks(self, cfg: Wav2Vec2Seq2SeqModConfig):
         regex_to_freeze = re.compile(
             "|".join([BLOCKS2REGEX[b] for b in cfg.freeze_layers.split(',')])
