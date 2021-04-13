@@ -17,7 +17,8 @@ class AugmentationNormalizationDataset(BaseWrapperDataset):
     dataset: FairseqDataset,
     effects_info: Dict[str, Union[List, Dict]],
     p_augm: float,
-    normalize: bool) -> None:
+    normalize: bool,
+    is_train_split: bool) -> None:
 
         super(AugmentationNormalizationDataset, self).__init__(dataset)
 
@@ -25,6 +26,7 @@ class AugmentationNormalizationDataset(BaseWrapperDataset):
         self.effects_info = effects_info
         self.p_augm = p_augm
         self.normalize = normalize
+        self.is_train_split = is_train_split
 
         self.sr = SAMPLING_RATE
         self.echo_gainin = ECHO_GAININ
@@ -49,7 +51,7 @@ class AugmentationNormalizationDataset(BaseWrapperDataset):
         _id, input_tensor, target_tensor = self.dataset[index]
 
         # apply effects or keep the original audiowave
-        if np.random.rand() < self.p_augm:
+        if self.is_train_split and np.random.rand() < self.p_augm:
             input_tensor = self._augment(input_tensor)
 
         # normalize audiowave

@@ -71,7 +71,8 @@ class SpeechToTextModTask(SpeechToTextTask):
             "Specify ranges for both parameters of echo (delay & decay) or for none"
 
     def load_dataset(self, split, epoch=1, combine=False, **kwargs):
-        if split.startswith("train"):
+        is_train_split = split.startswith("train")
+        if is_train_split:
             datasets = []
             splits = split.split(',')
             sample_ratios = \
@@ -88,11 +89,12 @@ class SpeechToTextModTask(SpeechToTextTask):
                     datasets.append(self.datasets.pop(s))
             upsample_ratios = [int(r) if r > 1 else 1 for r in sample_ratios]
             self.datasets[split] = ConcatDataset(datasets, upsample_ratios)
-            self.datasets[split] = AugmentationNormalizationDataset(
-                self.datasets[split], self.da_effects_info,
-                self.cfg.da_p_augm, self.cfg.normalize)
         else:
             super().load_dataset(split, epoch, combine, **kwargs)
+
+        self.datasets[split] = AugmentationNormalizationDataset(
+            self.datasets[split], self.da_effects_info,
+            self.cfg.da_p_augm, self.cfg.normalize, is_train_split)
 
     def begin_epoch(self, epoch, model):
         super().begin_epoch(epoch, model)
