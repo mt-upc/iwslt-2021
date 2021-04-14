@@ -217,6 +217,6 @@ Run the following command to train the model:
 CUDA_VISIBLE_DEVICES=0,1,2,3 \
 fairseq-hydra-train \
   --config-dir ${IWSLT_ROOT}/config/ \
-  --config-name mustc-wav2vec-st.yaml
+  --config-name iwslt21.yaml
 ```
 We used 4 GPUs and `update_freq=8`, which is equivalent to using 32 GPUs. Remember to keep `n_gpu·update_freq=32` if you use a different number of GPUs.
