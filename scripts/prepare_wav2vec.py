@@ -26,13 +26,22 @@ def main():
             ckpt['model'][new_key] = w
 
     # These are Wav2Vec2 parameters which will be removed in Wav2VecEncoder
-    ckpt['model']['quantizer.vars'] = torch.randn(1, 640, 384)
-    ckpt['model']['quantizer.weight_proj.weight'] = torch.randn(640, 512)
-    ckpt['model']['quantizer.weight_proj.bias'] = torch.randn(640)
-    ckpt['model']['project_q.weight'] = torch.randn(768, 768)
-    ckpt['model']['project_q.bias'] = torch.randn(768)
-    ckpt['model']['final_proj.weight'] = torch.randn(768, 1024)
-    ckpt['model']['final_proj.bias'] = torch.randn(768)
+    if 'small' in args.checkpoint.split('/')[-1]:
+        ckpt['model']['quantizer.vars'] = torch.randn(1, 640, 128)
+        ckpt['model']['quantizer.weight_proj.weight'] = torch.randn(640, 512)
+        ckpt['model']['quantizer.weight_proj.bias'] = torch.randn(640)
+        ckpt['model']['project_q.weight'] = torch.randn(256, 256)
+        ckpt['model']['project_q.bias'] = torch.randn(256)
+        ckpt['model']['final_proj.weight'] = torch.randn(256, 768)
+        ckpt['model']['final_proj.bias'] = torch.randn(256)
+    else:
+        ckpt['model']['quantizer.vars'] = torch.randn(1, 640, 384)
+        ckpt['model']['quantizer.weight_proj.weight'] = torch.randn(640, 512)
+        ckpt['model']['quantizer.weight_proj.bias'] = torch.randn(640)
+        ckpt['model']['project_q.weight'] = torch.randn(768, 768)
+        ckpt['model']['project_q.bias'] = torch.randn(768)
+        ckpt['model']['final_proj.weight'] = torch.randn(768, 1024)
+        ckpt['model']['final_proj.bias'] = torch.randn(768)
 
     torch_persistent_save(ckpt, args.checkpoint)
 

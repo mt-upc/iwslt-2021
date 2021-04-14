@@ -126,7 +126,7 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
     @classmethod
     def build_adapter(cls, cfg: Wav2Vec2Seq2SeqModConfig):
         adapter = Adapter(
-            cfg.w2v_args.model.encoder_embed_dim,
+            cfg.decoder_embed_dim,
             cfg.adapter_dim
         )
         return adapter
@@ -134,9 +134,9 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
     @classmethod
     def build_len_adaptor(cls, cfg: Wav2Vec2Seq2SeqModConfig):
         len_adaptor = Conv1dSubsampler(
-            cfg.w2v_args.model.encoder_embed_dim,
+            cfg.decoder_embed_dim,
             cfg.len_adaptor_channels,
-            cfg.w2v_args.model.encoder_embed_dim,
+            cfg.decoder_embed_dim,
             [int(k) for k in cfg.len_adaptor_kernel_sizes.split(",")],
         )
         return len_adaptor
