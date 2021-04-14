@@ -5,11 +5,12 @@ common:
   user_dir: ${env:IWSLT_ROOT}/fairseq_modules/
   tensorboard_logdir: ${env:TB_ROOT}/iwslt21/
   fp16: True
+  # memory_efficient_fp16: True
 
 task:
   _name: speech_to_text_iwslt21
   data: ${env:DATA_ROOT}
-  max_source_positions: 960_000   # 60s @ 16kHz
+  max_source_positions: 400_000   # 60s @ 16kHz
   max_target_positions: 1024
   normalize: True
   da_p_augm: 0.8
@@ -25,11 +26,11 @@ distributed_training:
 dataset:
   train_subset: train_mustc,train_covost,train_europarlst,train_dev_covost,train_dev_europarlst
   valid_subset: dev_mustc
-  num_workers: 0
+  num_workers: 6
   max_tokens: 480_000  # 3_200_000              # 200s @ 16kHz
   max_tokens_valid: 960_000
-  max_valid_steps: 4
   skip_invalid_size_inputs_valid_test: True
+  # disable_validation: True
 
 criterion:
   _name: label_smoothed_cross_entropy
@@ -38,13 +39,17 @@ criterion:
 
 checkpoint:
   save_dir: ${env:SAVE_DIR}
-  save_interval_updates: 20
-  keep_interval_updates: 20
+  restore_file: None
+  save_interval_updates: 500
+  keep_interval_updates: 10
+  keep_best_checkpoints: 5
+  # no_save: True
+
 
 optimization:
-    lr: [5e-4]
-    max_update: 20
-    update_freq: [8]
+    lr: [1e-5]
+    max_update: 16000 #32000
+    update_freq: [16]
     sentence_avg: True
     clip_norm: 10.0
 
@@ -64,6 +69,18 @@ model:
   w2v_path: ${env:WAV2VEC_ROOT}/wav2vec_vox_960h_pl.pt
   load_pretrained_decoder_from: ${env:MBART_ROOT}/model.pt
   autoregressive: True
+
+  apply_mask: True
+  mask_prob: 0.5
+  mask_channel_prob: 0.25
+  mask_channel_length: 64
+
+  dropout: 0.1
+  attention_dropout: 0.1
+  activation_dropout: 0.1
+
+  feature_grad_mult: 0.0
+  layerdrop: 0.1
 
   freeze_layers: encoder.feat_extr,encoder.ffn,decoder.embedding,decoder.self_attn,decoder.ffn
   adapter_dim: 4096
