@@ -1,3 +1,5 @@
+import numpy as np
+from omegaconf import II
 from dataclasses import dataclass, field
 
 from fairseq.data import ConcatDataset, SubsampleDataset
@@ -49,6 +51,8 @@ class SpeechToTextModTaskConfig(SpeechToTextTaskConfig):
         metadata={"help": "Whether to normalize the audiowave to zero mean and unit variance."}
     )
 
+    seed = II("common.seed")
+
 
 @register_task("speech_to_text_iwslt21", dataclass=SpeechToTextModTaskConfig)
 class SpeechToTextModTask(SpeechToTextTask):
@@ -98,6 +102,7 @@ class SpeechToTextModTask(SpeechToTextTask):
 
     def begin_epoch(self, epoch, model):
         super().begin_epoch(epoch, model)
+        np.random.seed(self.cfg.seed + epoch)
         if epoch == 1:
             return
         for split in self.datasets.keys():
