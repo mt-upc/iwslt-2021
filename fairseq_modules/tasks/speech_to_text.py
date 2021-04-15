@@ -51,7 +51,8 @@ class SpeechToTextModTaskConfig(SpeechToTextTaskConfig):
         metadata={"help": "Whether to normalize the audiowave to zero mean and unit variance."}
     )
 
-    seed = II("common.seed")
+    seed: int = II("common.seed")
+    max_tokens: int = II("dataset.max_tokens")
 
 
 @register_task("speech_to_text_iwslt21", dataclass=SpeechToTextModTaskConfig)
@@ -69,6 +70,8 @@ class SpeechToTextModTask(SpeechToTextTask):
                 "decay": list(map(float, cfg.da_echo_decay.split(",")))
             }
         }
+
+        self.max_src_len = min(cfg.max_source_positions, cfg.max_tokens)
 
         assert len(set(self.da_effects_info["echo"]["delay"])) == \
             len(set(self.da_effects_info["echo"]["decay"])), \
@@ -98,7 +101,8 @@ class SpeechToTextModTask(SpeechToTextTask):
 
         self.datasets[split] = AugmentationNormalizationDataset(
             self.datasets[split], self.da_effects_info,
-            self.cfg.da_p_augm, self.cfg.normalize, is_train_split)
+            self.cfg.da_p_augm, self.cfg.normalize,
+            self.max_src_len, is_train_split)
 
     def begin_epoch(self, epoch, model):
         super().begin_epoch(epoch, model)

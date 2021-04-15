@@ -18,6 +18,7 @@ class AugmentationNormalizationDataset(BaseWrapperDataset):
     effects_info: Dict[str, Union[List, Dict]],
     p_augm: float,
     normalize: bool,
+    max_src_len: int,
     is_train_split: bool) -> None:
 
         super(AugmentationNormalizationDataset, self).__init__(dataset)
@@ -26,6 +27,7 @@ class AugmentationNormalizationDataset(BaseWrapperDataset):
         self.effects_info = effects_info
         self.p_augm = p_augm
         self.normalize = normalize
+        self.max_src_len = max_src_len
         self.is_train_split = is_train_split
 
         self.sr = SAMPLING_RATE
@@ -62,6 +64,8 @@ class AugmentationNormalizationDataset(BaseWrapperDataset):
 
     def _augment(self, input_tensor: torch.tensor) -> torch.tensor:
 
+        src_len = len(input_tensor)
+
         # init empty chain
         effect_chain = EffectChain()
 
@@ -72,8 +76,15 @@ class AugmentationNormalizationDataset(BaseWrapperDataset):
 
         if "tempo" in self.avai_effects:
 
-            effect_chain = effect_chain.tempo(
-                np.random.uniform(*self.effects_info["tempo"]))
+            # don't apply a tempo effect that will create an example longer than max_src_len
+            min_tempo_value = src_len / self.max_src_len
+            sampled_tempo_value = np.random.uniform(
+                max(min_tempo_value, self.effects_info["tempo"][0]),
+                self.effects_info["tempo"][1])
+            effect_chain = effect_chain.tempo(sampled_tempo_value)
+
+            # adjust to length after tempo
+            src_len = int(src_len * sampled_tempo_value)
 
         if "echo" in self.avai_effects:
 
@@ -84,8 +95,9 @@ class AugmentationNormalizationDataset(BaseWrapperDataset):
                 np.random.uniform(*self.effects_info["echo"]["decay"]))
 
         # apply effects and reduce channel dimension that is created by default
+        # also crop the extra frames that were created by echo delay
         input_tensor_augm = effect_chain.apply(input_tensor,
-            src_info = self.info, target_info = self.info).squeeze(0)
+            src_info = self.info, target_info = self.info).squeeze(0)[:src_len]
 
         # sox might misbehave sometimes by giving nan/inf if sequences are too short (or silent)
         if torch.isnan(input_tensor_augm).any() or torch.isinf(input_tensor_augm).any():
