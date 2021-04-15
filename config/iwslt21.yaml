@@ -5,7 +5,6 @@ common:
   user_dir: ${env:IWSLT_ROOT}/fairseq_modules/
   tensorboard_logdir: ${env:TB_ROOT}/iwslt21/
   fp16: True
-  # memory_efficient_fp16: True
 
 task:
   _name: speech_to_text_iwslt21
@@ -21,12 +20,13 @@ task:
   sample_ratios: 1,0.3,1,0.3,1
 
 distributed_training:
-  find_unused_parameters: True
+  ddp_backend: fully_sharded
+  cpu_offload: True
 
 dataset:
   train_subset: train_mustc,train_covost,train_europarlst,train_dev_covost,train_dev_europarlst
   valid_subset: dev_mustc
-  num_workers: 6
+  num_workers: 0
   max_tokens: 480_000             # 30s @ 16kHz
   max_tokens_valid: 960_000
   skip_invalid_size_inputs_valid_test: True
@@ -51,7 +51,7 @@ optimization:
   clip_norm: 10.0
 
 optimizer:
-    _name: adam
+    _name: cfg_adam
     adam_betas: (0.9,0.98)
     adam_eps: 1e-08
 
