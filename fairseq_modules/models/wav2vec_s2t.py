@@ -5,6 +5,7 @@ from typing import Optional
 from omegaconf import DictConfig, open_dict
 from dataclasses import dataclass, field
 
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -16,6 +17,7 @@ from fairseq.models.transformer import TransformerDecoder
 from fairseq.models.wav2vec import (
     Wav2Vec2Seq2SeqConfig,
     Wav2Vec2Seq2SeqModel,
+    Wav2VecEncoder,
     Embedding,
 )
 from fairseq.models.speech_to_text import (
@@ -31,7 +33,9 @@ BLOCKS2REGEX = {
                          r"encoder.*\.pos_conv\..*",
     "encoder.self_attn": r"encoder.*\.self_attn\..*",
     "encoder.layer_norm": r"encoder.*layer_norm.*",
-    "encoder.ffn": r"encoder.*\.fc[1-2]\..*",
+    "encoder.ffn": r"encoder.encoder.*\.fc[1-2]\..*",
+    "adapter": r"encoder.adapter.*",
+    "len_adaptor": r"encoder.len_adaptor.*",
     "decoder.embedding": r"decoder\.embed_tokens.*|"
                          r"decoder\.embed_positions.*|"
                          r"decoder\.layernorm_embedding.*",
@@ -39,8 +43,6 @@ BLOCKS2REGEX = {
     "decoder.layer_norm": r"decoder.*layer_norm.*",
     "decoder.encoder_attn": r"decoder.*\.encoder_attn\..*",
     "decoder.ffn": r"decoder.*\.fc[1-2]\..*",
-    "adapter": r"adapter.*",
-    "len_adaptor": r"len_adaptor.*",
 }
 
 
@@ -82,12 +84,11 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
       - Use with the speech_to_text pipeline
       - Loading pretrained decoder
       - Finetuning only LNA layers
+      - Using adapter and length_adaptor modules
     """
 
-    def __init__(self, encoder, decoder, adapter, len_adaptor):
+    def __init__(self, encoder, decoder):
         super().__init__(encoder, decoder)
-        self.adapter = adapter
-        self.len_adaptor = len_adaptor
 
     @classmethod
     def build_model(cls, cfg: Wav2Vec2Seq2SeqModConfig, task: FairseqTask):
@@ -103,12 +104,14 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
 
         encoder = cls.build_encoder(cfg)
         decoder = cls.build_decoder(cfg, task.tgt_dict, decoder_embed_tokens)
-        adapter = cls.build_adapter(cfg) if cfg.adapter_dim else None
-        len_adaptor = cls.build_len_adaptor(cfg)
 
-        model = Wav2Vec2Seq2SeqModModel(encoder, decoder, adapter, len_adaptor)
+        model = Wav2Vec2Seq2SeqModModel(encoder, decoder)
         model.freeze_blocks(cfg)
         return model
+
+    @classmethod
+    def build_encoder(cls, cfg: Wav2Vec2Seq2SeqModConfig):
+        return Wav2VecEncoderMod(cfg)
 
     @classmethod
     def build_decoder(cls, cfg: Wav2Vec2Seq2SeqModConfig, tgt_dict, embed_tokens):
@@ -123,46 +126,10 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
             )
         return decoder
 
-    @classmethod
-    def build_adapter(cls, cfg: Wav2Vec2Seq2SeqModConfig):
-        adapter = Adapter(
-            cfg.decoder_embed_dim,
-            cfg.adapter_dim
-        )
-        return adapter
-
-    @classmethod
-    def build_len_adaptor(cls, cfg: Wav2Vec2Seq2SeqModConfig):
-        len_adaptor = Conv1dSubsampler(
-            cfg.decoder_embed_dim,
-            cfg.len_adaptor_channels,
-            cfg.decoder_embed_dim,
-            [int(k) for k in cfg.len_adaptor_kernel_sizes.split(",")],
-        )
-        return len_adaptor
-
     def forward(self, src_tokens, src_lengths, prev_output_tokens, **kwargs):
-        encoder_out = self.encoder(
-            source=src_tokens,
-            padding_mask=lengths_to_padding_mask(src_lengths),
-            tbc=False,  # B x T x C
-            **kwargs
-        )
-        encoder_out["encoder_padding_mask"] = encoder_out.pop("padding_mask")
-        if self.adapter:
-            encoder_out["encoder_out"] = \
-                self.adapter(
-                    encoder_out["encoder_out"]
-                )
-        encoder_out["encoder_out"], lengths = self.len_adaptor(
-            encoder_out["encoder_out"],
-            (~encoder_out["encoder_padding_mask"]).sum(dim=1)
-        )
-        encoder_out["encoder_padding_mask"] = lengths_to_padding_mask(lengths)
+        encoder_out = self.encoder(src_tokens, src_lengths=src_lengths, **kwargs)
         decoder_out = self.decoder(
-            prev_output_tokens,
-            encoder_out={k: [v] for k, v in encoder_out.items()},
-            **kwargs
+            prev_output_tokens, encoder_out=encoder_out, **kwargs
         )
         return decoder_out
 
@@ -173,6 +140,64 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
         for n, p in self.named_parameters():
             if re.match(regex_to_freeze, n):
                 p.requires_grad = False
+
+
+class Wav2VecEncoderMod(Wav2VecEncoder):
+    """
+    Modification of the Wav2VecEncoder
+
+    It modifies it to work with the speech_to_text pipeline.
+    Moreover, it includes the adapter and length adaptor modules.
+    """
+    def __init__(self, cfg: Wav2Vec2Seq2SeqModConfig, tgt_dict=None):
+        super().__init__(cfg, tgt_dict)
+        self.adapter = Adapter(
+            cfg.decoder_embed_dim,
+            cfg.adapter_dim
+        ) if cfg.adapter_dim else None
+
+        self.len_adaptor = Conv1dSubsampler(
+            cfg.decoder_embed_dim,
+            cfg.len_adaptor_channels,
+            cfg.decoder_embed_dim,
+            [int(k) for k in cfg.len_adaptor_kernel_sizes.split(",")],
+        )
+
+    def forward(self, src_tokens, src_lengths, **kwargs):
+        encoder_out = super().forward(
+            source=src_tokens,
+            padding_mask=lengths_to_padding_mask(src_lengths),
+            **kwargs
+        )
+        encoder_out["encoder_padding_mask"] = encoder_out.pop("padding_mask")
+        if self.adapter:
+            encoder_out["encoder_out"] = \
+                self.adapter(
+                    encoder_out["encoder_out"]
+                )
+        encoder_out["encoder_out"], lengths = self.len_adaptor(
+            encoder_out["encoder_out"].transpose(0, 1),
+            (~encoder_out["encoder_padding_mask"]).sum(dim=1)
+        )
+        encoder_out["encoder_padding_mask"] = lengths_to_padding_mask(lengths)
+        return {k: [v] for k, v in encoder_out.items()}
+
+    @torch.jit.export
+    def reorder_encoder_out(self, encoder_out, new_order):
+        if len(encoder_out["encoder_out"]) == 0:
+            new_encoder_out = []
+        else:
+            new_encoder_out = [encoder_out["encoder_out"][0].index_select(1, new_order)]
+        if len(encoder_out["encoder_padding_mask"]) == 0:
+            new_encoder_padding_mask = []
+        else:
+            new_encoder_padding_mask = [
+                encoder_out["encoder_padding_mask"][0].index_select(0, new_order)
+            ]
+        return {
+            "encoder_out": new_encoder_out,  # T x B x C
+            "encoder_padding_mask": new_encoder_padding_mask,  # B x T
+        }
 
 
 class TransformerDecoderMod(TransformerDecoder):
