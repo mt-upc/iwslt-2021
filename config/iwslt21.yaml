@@ -51,7 +51,7 @@ optimization:
   clip_norm: 10.0
 
 optimizer:
-    _name: cfg_adam
+    _name: cpu_adam
     adam_betas: (0.9,0.98)
     adam_eps: 1e-08
 
