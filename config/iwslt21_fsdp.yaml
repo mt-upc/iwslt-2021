@@ -28,6 +28,8 @@ dataset:
   valid_subset: dev_mustc
   num_workers: 0
   max_tokens: 480_000             # 30s @ 16kHz
+  batch_size: 18
+  required_batch_size_multiple: 1
   max_tokens_valid: 960_000
   skip_invalid_size_inputs_valid_test: True
 
