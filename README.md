@@ -24,6 +24,15 @@ git clone -b tmp https://github.com/gegallego/fairseq.git ${FAIRSEQ_ROOT} && \
 pip install --editable ${FAIRSEQ_ROOT}
 ```
 
+Install NVIDIA's [apex](https://github.com/NVIDIA/apex) library for faster training.
+```bash
+git clone https://github.com/NVIDIA/apex && cd apex
+pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" \
+  --global-option="--deprecated_fused_adam" --global-option="--xentropy" \
+  --global-option="--fast_multihead_attn" ./
+cd .. && rm -rf apex
+```
+
 ## Pre-trained models
 In this project we use a pre-trained Wav2Vec 2.0 encoder and a pre-trained mBART decoder.
 
