@@ -127,7 +127,9 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
         return decoder
 
     def forward(self, src_tokens, src_lengths, prev_output_tokens, **kwargs):
-        encoder_out = self.encoder(src_tokens, src_lengths=src_lengths, **kwargs)
+        encoder_out = self.encoder(
+            src_tokens, src_lengths=src_lengths, tbc=False, **kwargs
+        )
         decoder_out = self.decoder(
             prev_output_tokens, encoder_out=encoder_out, **kwargs
         )
@@ -176,7 +178,7 @@ class Wav2VecEncoderMod(Wav2VecEncoder):
                     encoder_out["encoder_out"]
                 )
         encoder_out["encoder_out"], lengths = self.len_adaptor(
-            encoder_out["encoder_out"].transpose(0, 1),
+            encoder_out["encoder_out"],
             (~encoder_out["encoder_padding_mask"]).sum(dim=1)
         )
         encoder_out["encoder_padding_mask"] = lengths_to_padding_mask(lengths)
