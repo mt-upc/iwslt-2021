@@ -3,7 +3,7 @@
 common:
   seed: 1
   user_dir: ${env:IWSLT_ROOT}/fairseq_modules/
-  tensorboard_logdir: ${env:TB_ROOT}/iwslt21/
+  tensorboard_logdir: ${env:SAVE_DIR}/${env:EXP_NAME}/tb_logs/
   fp16: True
   memory_efficient_fp16: True
 
@@ -34,7 +34,7 @@ criterion:
   ignore_prefix_size: 1
 
 checkpoint:
-  save_dir: ${env:SAVE_DIR}
+  save_dir: ${env:SAVE_DIR}/${env:EXP_NAME}/ckpts/
   restore_file: None
   save_interval_updates: 500
   keep_interval_updates: 10
@@ -92,3 +92,10 @@ model:
   decoder_activation_dropout: 0.0
   share_decoder_input_output_embed: True
   max_target_positions: "${task.max_target_positions}"
+
+hydra:
+  run:
+    dir: ${env:SAVE_DIR}/${env:EXP_NAME}/hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  sweep:
+    dir: ${env:SAVE_DIR}/${env:EXP_NAME}/hydra_multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
