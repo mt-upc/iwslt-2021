@@ -26,7 +26,7 @@ distributed_training:
 dataset:
   train_subset: train_mustc,train_covost,train_europarlst,train_dev_covost,train_dev_europarlst
   valid_subset: dev_mustc
-  num_workers: 4
+  num_workers: 3    # set to n_cpu // 2
   max_tokens: 480_000             # 30s @ 16kHz
   batch_size: 18
   required_batch_size_multiple: 1
@@ -81,7 +81,7 @@ model:
   layerdrop: 0.1
 
   freeze_layers: encoder.feat_extr,encoder.ffn,decoder.embedding,decoder.self_attn,decoder.ffn
-  adapter_dim: None
+  # adapter_dim: 4096
   len_adaptor_kernel_sizes: 3,3,3
   len_adaptor_channels: 1024
 
