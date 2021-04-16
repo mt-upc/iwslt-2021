@@ -26,7 +26,7 @@ distributed_training:
 dataset:
   train_subset: train_mustc,train_covost,train_europarlst,train_dev_covost,train_dev_europarlst
   valid_subset: dev_mustc
-  num_workers: 0
+  num_workers: 4
   max_tokens: 480_000             # 30s @ 16kHz
   batch_size: 18
   required_batch_size_multiple: 1
@@ -45,8 +45,8 @@ checkpoint:
   keep_best_checkpoints: 5
 
 optimization:
-  lr: [1e-5]
-  max_update: 16000
+  lr: [8.75e-05]
+  max_update: 23136 # 16 epochs x 1446 updates per epoch
   update_freq: [16]
   sentence_avg: True
   clip_norm: 10.0
@@ -58,8 +58,9 @@ optimizer:
 
 lr_scheduler:
     _name: tri_stage
-    phase_ratio: [0.1, 0.4, 0.5]
-    final_lr_scale: 0.05
+    phase_ratio: [0.1, 0.3, 0.6]
+    init_lr_scale: 0.01
+    final_lr_scale: 0.01
 
 model:
   _name: wav2vec_seq2seq_iwslt21
@@ -80,7 +81,7 @@ model:
   layerdrop: 0.1
 
   freeze_layers: encoder.feat_extr,encoder.ffn,decoder.embedding,decoder.self_attn,decoder.ffn
-  adapter_dim: 4096
+  adapter_dim: None
   len_adaptor_kernel_sizes: 3,3,3
   len_adaptor_channels: 1024
 
