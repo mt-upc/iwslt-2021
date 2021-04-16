@@ -38,7 +38,6 @@ criterion:
 
 checkpoint:
   save_dir: ${env:SAVE_DIR}/${env:EXP_NAME}/ckpts/
-  restore_file: None
   save_interval_updates: 500
   keep_interval_updates: 10
   keep_best_checkpoints: 5
