@@ -33,9 +33,9 @@ BLOCKS2REGEX = {
                          r"encoder.*\.pos_conv\..*",
     "encoder.self_attn": r"encoder.*\.self_attn\..*",
     "encoder.layer_norm": r"encoder.*layer_norm.*",
-    "encoder.ffn": r"encoder.encoder.*\.fc[1-2]\..*",
-    "adapter": r"encoder.adapter.*",
-    "len_adaptor": r"encoder.len_adaptor.*",
+    "encoder.ffn": r"encoder.*\.fc[1-2]\..*",
+    "adapter": r"encoder\.adapter.*",
+    "len_adaptor": r"encoder\.len_adaptor.*",
     "decoder.embedding": r"decoder\.embed_tokens.*|"
                          r"decoder\.embed_positions.*|"
                          r"decoder\.layernorm_embedding.*",
