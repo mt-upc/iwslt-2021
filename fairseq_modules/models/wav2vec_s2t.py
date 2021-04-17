@@ -143,6 +143,12 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
             if re.match(regex_to_freeze, n):
                 p.requires_grad = False
 
+    def get_normalized_probs(self, net_output, log_probs, sample=None):
+        # net_output['encoder_out'] is a (B, T, D) tensor
+        lprobs = self.get_normalized_probs_scriptable(net_output, log_probs, sample)
+        lprobs.batch_first = True
+        return lprobs
+
 
 class Wav2VecEncoderMod(Wav2VecEncoder):
     """
