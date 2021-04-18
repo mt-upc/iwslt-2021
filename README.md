@@ -218,7 +218,6 @@ ln -s $EUROPARLST_ROOT/en/test_en-de_st.tsv $DATA_ROOT/test_europarlst.tsv
 Set the environment variables:
 ```bash
 export SAVE_DIR=...          # where the checkpoints, hydra logs and yensorboard logs will be saved
-export EXP_NAME=...          # name of the experiment
 ```
 
 Run the following command to train the model:
@@ -226,7 +225,7 @@ Run the following command to train the model:
 CUDA_VISIBLE_DEVICES=0,1,2,3 \
 fairseq-hydra-train \
   --config-dir ${IWSLT_ROOT}/config/ \
-  --config-name iwslt21.yaml
+  --config-name lna_ed.yaml
 ```
 
 We used 4 GPUs and `update_freq=16`, which is equivalent to using 64 GPUs. Remember to keep `n_gpu·update_freq=64` if you use a different number of GPUs.

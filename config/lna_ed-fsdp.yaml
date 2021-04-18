@@ -3,9 +3,8 @@
 common:
   seed: 1
   user_dir: ${env:IWSLT_ROOT}/fairseq_modules/
-  tensorboard_logdir: ${env:SAVE_DIR}/${env:EXP_NAME}/tb_logs/
+  tensorboard_logdir: ${env:SAVE_DIR}/lna_ed/tb_logs/
   fp16: True
-  memory_efficient_fp16: True
 
 task:
   _name: speech_to_text_iwslt21
@@ -21,7 +20,8 @@ task:
   sample_ratios: 1,0.3,1,0.3,1
 
 distributed_training:
-  find_unused_parameters: True
+  ddp_backend: fully_sharded
+  cpu_offload: True
 
 dataset:
   train_subset: train_mustc,train_covost,train_europarlst,train_dev_covost,train_dev_europarlst
@@ -39,7 +39,7 @@ criterion:
   ignore_prefix_size: 1
 
 checkpoint:
-  save_dir: ${env:SAVE_DIR}/${env:EXP_NAME}/ckpts/
+  save_dir: ${env:SAVE_DIR}/lna_ed/ckpts/
   save_interval_updates: 500
   keep_interval_updates: 10
   keep_best_checkpoints: 5
@@ -52,7 +52,7 @@ optimization:
   clip_norm: 10.0
 
 optimizer:
-    _name: adam
+    _name: cpu_adam
     adam_betas: (0.9,0.98)
     adam_eps: 1e-08
 
@@ -100,7 +100,7 @@ model:
 
 hydra:
   run:
-    dir: ${env:SAVE_DIR}/${env:EXP_NAME}/hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: ${env:SAVE_DIR}/lna_ed/hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
   sweep:
-    dir: ${env:SAVE_DIR}/${env:EXP_NAME}/hydra_multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: ${env:SAVE_DIR}/lna_ed/hydra_multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
     subdir: ${hydra.job.num}
