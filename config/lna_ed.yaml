@@ -45,11 +45,11 @@ checkpoint:
   keep_best_checkpoints: 5
 
 optimization:
-  lr: [8.75e-05]
-  max_update: 23136 # 16 epochs x 1446 updates per epoch
+  lr: [1e-04]
+  max_update: 22704               # 16 epochs x 1419 updates/epoch
   update_freq: [16]
   sentence_avg: True
-  clip_norm: 10.0
+  clip_norm: 20.0
 
 optimizer:
     _name: adam
@@ -58,30 +58,34 @@ optimizer:
 
 lr_scheduler:
     _name: tri_stage
-    phase_ratio: [0.1, 0.2, 0.7]
+    phase_ratio: [0.15, 0.15, 0.7]
     init_lr_scale: 0.01
     final_lr_scale: 0.01
 
 model:
   _name: wav2vec_seq2seq_iwslt21
+
+  freeze_layers: encoder.feat_extr,encoder.ffn,decoder.embedding,decoder.self_attn,decoder.ffn
+
   w2v_path: ${env:WAV2VEC_ROOT}/wav2vec_vox_960h_pl.pt
   load_pretrained_decoder_from: ${env:MBART_ROOT}/model.pt
   autoregressive: True
+  feature_grad_mult: 0.0
 
   apply_mask: True
   mask_prob: 0.2
   mask_channel_prob: 0.1
   mask_channel_length: 64
 
-  dropout: 0.1
+  dropout: 0.0
   attention_dropout: 0.1
-  activation_dropout: 0.1
+  activation_dropout: 0.0
+  final_dropout: 0.1
+  layerdrop: 0.0
 
-  feature_grad_mult: 0.0
-  layerdrop: 0.1
-
-  freeze_layers: encoder.feat_extr,encoder.ffn,decoder.embedding,decoder.self_attn,decoder.ffn
   # adapter_dim: 4096
+  # adapter_dropout: 0.1
+
   len_adaptor_kernel_sizes: 3,3,3
   len_adaptor_channels: 1024
 
@@ -92,8 +96,9 @@ model:
   decoder_attention_heads: 16
   decoder_learned_pos: True
   decoder_normalize_before: True
-  decoder_dropout: 0.3
-  decoder_attention_dropout: 0.1
+  decoder_dropout: 0.0
+  decoder_attention_dropout: 0.0
+  decoder_enc_attention_dropout: 0.1
   decoder_activation_dropout: 0.0
   share_decoder_input_output_embed: True
   max_target_positions: "${task.max_target_positions}"
