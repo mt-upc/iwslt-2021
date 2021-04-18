@@ -73,6 +73,12 @@ class Wav2Vec2Seq2SeqModConfig(Wav2Vec2Seq2SeqConfig):
         metadata={"help": "decoder output dimension (extra linear layer "
                           "if different from decoder embed dim)"}
     )
+    decoder_enc_attention_dropout: Optional[float] = field(
+        default=None,
+        metadata={"help": "dropout probability for the encoder-decoder "
+                          "attention weights (if it's not specified, the "
+                          "decoder_attention_dropout is used)"}
+    )
 
 
 @register_model("wav2vec_seq2seq_iwslt21", dataclass=Wav2Vec2Seq2SeqModConfig)
@@ -231,6 +237,10 @@ class TransformerDecoderMod(TransformerDecoder):
             transformer_cfg.quant_noise_pq = 0.0
             transformer_cfg.adaptive_softmax_cutoff = None
         super().__init__(transformer_cfg, dictionary, embed_tokens, no_encoder_attn)
+        if cfg.decoder_enc_attention_dropout is not None:
+            for layer in self.layers:
+                layer.encoder_attn.dropout_module.p = \
+                    cfg.decoder_enc_attention_dropout
 
     def load_state_dict(self, state_dict, strict=True):
         state_dict["output_projection.weight"] = state_dict["embed_tokens.weight"]
