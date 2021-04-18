@@ -228,4 +228,5 @@ fairseq-hydra-train \
   --config-dir ${IWSLT_ROOT}/config/ \
   --config-name iwslt21.yaml
 ```
-We used 4 GPUs and `update_freq=8`, which is equivalent to using 32 GPUs. Remember to keep `n_gpu·update_freq=32` if you use a different number of GPUs.
+
+We used 4 GPUs and `update_freq=16`, which is equivalent to using 64 GPUs. Remember to keep `n_gpu·update_freq=64` if you use a different number of GPUs.
