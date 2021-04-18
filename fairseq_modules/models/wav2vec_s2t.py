@@ -11,7 +11,10 @@ import torch.nn.functional as F
 
 from fairseq import checkpoint_utils
 from fairseq.tasks import FairseqTask
-from fairseq.modules import LayerNorm
+from fairseq.modules import (
+    LayerNorm,
+    FairseqDropout,
+)
 from fairseq.models import register_model
 from fairseq.models.transformer import TransformerDecoder
 from fairseq.models.wav2vec import (
@@ -55,6 +58,12 @@ class Wav2Vec2Seq2SeqModConfig(Wav2Vec2Seq2SeqConfig):
     adapter_dim: Optional[int] = field(
         default=None,
         metadata={"help": "projection size of the Adapter"}
+    )
+    adapter_dropout: float = field(
+        default=0.0,
+        metadata={"help": "dropout probability for the encoder-decoder "
+                          "attention weights (if it's not specified, the "
+                          "decoder_attention_dropout is used)"}
     )
     len_adaptor_kernel_sizes: str = field(
         default="3,3",
@@ -167,7 +176,8 @@ class Wav2VecEncoderMod(Wav2VecEncoder):
         super().__init__(cfg, tgt_dict)
         self.adapter = Adapter(
             cfg.decoder_embed_dim,
-            cfg.adapter_dim
+            cfg.adapter_dim,
+            cfg.adapter_dropout
         ) if cfg.adapter_dim else None
 
         self.len_adaptor = Conv1dSubsampler(
@@ -252,11 +262,14 @@ class Adapter(nn.Module):
     Adapter for model finetuning, as described in:
     https://arxiv.org/pdf/1909.08478.pdf
     """
-    def __init__(self, embed_dim, proj_dim):
+    def __init__(self, embed_dim, proj_dim, dropout):
         super().__init__()
         self.layer_norm = LayerNorm(embed_dim)
         self.down_proj = nn.Linear(embed_dim, proj_dim)
         self.up_proj = nn.Linear(proj_dim, embed_dim)
+        self.dropout_module = FairseqDropout(
+            dropout, module_name=self.__class__.__name__
+        )
 
     def forward(self, x):
         residual = x
@@ -264,5 +277,6 @@ class Adapter(nn.Module):
         x = self.down_proj(x)
         x = F.relu(x)
         x = self.up_proj(x)
+        x = self.dropout_module(x)
         x += residual
         return x
