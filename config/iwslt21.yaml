@@ -26,7 +26,7 @@ distributed_training:
 dataset:
   train_subset: train_mustc,train_covost,train_europarlst,train_dev_covost,train_dev_europarlst
   valid_subset: dev_mustc
-  num_workers: 3    # set to n_cpu // 2
+  num_workers: 4                  # n_cpu // 2
   max_tokens: 480_000             # 30s @ 16kHz
   batch_size: 18
   required_batch_size_multiple: 1
@@ -58,7 +58,7 @@ optimizer:
 
 lr_scheduler:
     _name: tri_stage
-    phase_ratio: [0.1, 0.3, 0.6]
+    phase_ratio: [0.1, 0.2, 0.7]
     init_lr_scale: 0.01
     final_lr_scale: 0.01
 
@@ -69,8 +69,8 @@ model:
   autoregressive: True
 
   apply_mask: True
-  mask_prob: 0.5
-  mask_channel_prob: 0.25
+  mask_prob: 0.2
+  mask_channel_prob: 0.1
   mask_channel_length: 64
 
   dropout: 0.1
