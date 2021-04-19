@@ -66,6 +66,7 @@ Set the environment variables:
 export MUSTC_ROOT=...        # where you'll download MuST-C data
 export COVOST_ROOT=...       # where you'll download CoVoST data
 export EUROPARLST_ROOT=...   # where you'll download Europarl-ST data
+export IWSLT_TEST_ROOT=...   # where you'll download IWSLT test sets
 export DATA_ROOT=...         # where you'll combine the datasets
 ```
 
@@ -105,6 +106,20 @@ This dataset contains M4A files at 44.1 kHz. As we did with CoVoST, we need to c
 for f in ${EUROPARLST_ROOT}/*/audios/*.m4a; do
   ffmpeg -i $f -ar 16000 -hide_banner -loglevel error "${f%.m4a}.wav" && rm $f
 done
+```
+
+#### IWSLT test sets
+Download IWSLT test sets to `$IWSLT_TEST_ROOT`:
+
+```bash
+mkdir -p ${IWSLT_TEST_ROOT}/tst2020/ && \
+wget https://surfdrive.surf.nl/files/index.php/s/KVYz2OgcVZJGPYK/download -O - | \
+  tar -xz --strip-components 1 -C ${IWSLT_TEST_ROOT}/tst2020/
+```
+```bash
+mkdir -p ${IWSLT_TEST_ROOT}/tst2021/ && \
+wget https://surfdrive.surf.nl/files/index.php/s/U3blQuKJ2M0L14K/download -O - | \
+  tar -xz --strip-components 1 -C ${IWSLT_TEST_ROOT}/tst2021/
 ```
 
 ### Preparation
@@ -170,6 +185,9 @@ python $FAIRSEQ_ROOT/examples/speech_to_text/prep_europarlst_data.py \
   --data-root $EUROPARLST_ROOT --lang-pair en-de --task st \
   --vocab-type bpe --vocab-size 250000 \
   --use-audio-input --prepend-tgt-lang-tag
+
+# IWSLT test sets
+python $IWSLT_ROOT/scripts/prepare_iwslt_tst.py --data-root $IWSLT_TEST_ROOT
 ```
 
 ### Filtering
@@ -212,6 +230,9 @@ ln -s $COVOST_ROOT/en/test_st_en_de.tsv $DATA_ROOT/test_covost.tsv
 ln -s $EUROPARLST_ROOT/en/train_en-de_st_filtered.tsv $DATA_ROOT/train_europarlst.tsv
 ln -s $EUROPARLST_ROOT/en/dev_en-de_st_filtered.tsv $DATA_ROOT/train_dev_europarlst.tsv
 ln -s $EUROPARLST_ROOT/en/test_en-de_st.tsv $DATA_ROOT/test_europarlst.tsv
+
+ln -s $IWSLT_TEST_ROOT/tst2020.tsv $DATA_ROOT/tst2020_iwslt.tsv
+ln -s $IWSLT_TEST_ROOT/tst2021.tsv $DATA_ROOT/tst2021_iwslt.tsv
 ```
 
 ## Training
