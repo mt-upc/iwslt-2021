@@ -250,3 +250,37 @@ fairseq-hydra-train \
 ```
 
 We used 4 GPUs and `update_freq=16`, which is equivalent to using 64 GPUs. Remember to keep `n_gpu·update_freq=64` if you use a different number of GPUs.
+
+## Evaluation
+Generate the outputs of `tst-COMMON_mustc` to evaluate the model:
+```bash
+fairseq-generate ${DATA_ROOT} \
+  --path ${SAVE_DIR}/lna_ed/ckpts/checkpoint_last.pt \
+  --results-path ${SAVE_DIR}/lna_ed/results/ \
+  --user-dir ${IWSLT_ROOT}/fairseq_modules \
+  --task speech_to_text_iwslt21 --gen-subset tst-COMMON_mustc \
+  --max-source-positions 960000 --max-tokens 960000   \
+  --skip-invalid-size-inputs-valid-test --prefix-size 1 \
+  --beam 5 --scoring sacrebleu
+```
+
+And generate predictions for the IWSLT test sets:
+```bash
+fairseq-generate ${DATA_ROOT} \
+  --path ${SAVE_DIR}/lna_ed/ckpts/checkpoint_last.pt \
+  --results-path ${SAVE_DIR}/lna_ed/results/ \
+  --user-dir ${IWSLT_ROOT}/fairseq_modules \
+  --task speech_to_text_iwslt21 --gen-subset tst2020_iwslt \
+  --max-source-positions 960000 --max-tokens 960000   \
+  --skip-invalid-size-inputs-valid-test --prefix-size 1 \
+  --beam 5
+
+fairseq-generate ${DATA_ROOT} \
+  --path ${SAVE_DIR}/lna_ed/ckpts/checkpoint_last.pt \
+  --results-path ${SAVE_DIR}/lna_ed/results/ \
+  --user-dir ${IWSLT_ROOT}/fairseq_modules \
+  --task speech_to_text_iwslt21 --gen-subset tst2021_iwslt \
+  --max-source-positions 960000 --max-tokens 960000   \
+  --skip-invalid-size-inputs-valid-test --prefix-size 1 \
+  --beam 5
+```
