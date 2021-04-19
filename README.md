@@ -197,17 +197,17 @@ Run the filtering script to produce a clean version of a dataset. The script doe
 
 ```bash
 # MuST-C
-python scripts/filtering/filter_tsv.py \
+python $IWSLT_ROOT/scripts/filtering/filter_tsv.py \
   --dataset_name MUSTC --tsv_root $MUSTC_ROOT/en-de \
   --asr_batch_size 24 --asr_wer_threshold 0.5
 
 # CoVoST
-python scripts/filtering/filter_tsv.py \
+python $IWSLT_ROOT/scripts/filtering/filter_tsv.py \
   --dataset_name COVOST --tsv_root $COVOST_ROOT/en \
   --asr_batch_size 24 --asr_wer_threshold 0.5
 
 # Europarl-ST
-python scripts/filtering/filter_tsv.py \
+python $IWSLT_ROOT/scripts/filtering/filter_tsv.py \
   --dataset_name EUROPARLST --tsv_root $EUROPARLST_ROOT/en \
   --asr_batch_size 24 --asr_wer_threshold 0.5
 ```
@@ -238,7 +238,7 @@ ln -s $IWSLT_TEST_ROOT/tst2021.tsv $DATA_ROOT/tst2021_iwslt.tsv
 ## Training
 Set the environment variables:
 ```bash
-export SAVE_DIR=...          # where the checkpoints, hydra logs and yensorboard logs will be saved
+export SAVE_DIR=...          # where the checkpoints, hydra logs and tensorboard logs will be saved
 ```
 
 Run the following command to train the model:
