@@ -169,6 +169,26 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
         lprobs.batch_first = True
         return lprobs
 
+    def load_state_dict(self, state_dict, strict=True, model_cfg=None, args=None):
+        # Allow loading state dicts without Adapter
+        state_has_adapter = any([k for k in state_dict.keys()
+                                 if k.startswith("encoder.adapter.")])
+        if self.encoder.adapter and not state_has_adapter:
+            state_dict["encoder.adapter.layer_norm.weight"] = \
+                self.encoder.adapter.layer_norm.weight
+            state_dict["encoder.adapter.layer_norm.bias"] = \
+                self.encoder.adapter.layer_norm.bias
+            state_dict["encoder.adapter.down_proj.weight"] = \
+                self.encoder.adapter.down_proj.weight
+            state_dict["encoder.adapter.down_proj.bias"] = \
+                self.encoder.adapter.down_proj.bias
+            state_dict["encoder.adapter.up_proj.weight"] = \
+                self.encoder.adapter.up_proj.weight
+            state_dict["encoder.adapter.up_proj.bias"] = \
+                self.encoder.adapter.up_proj.bias
+
+        super().load_state_dict(state_dict, strict, model_cfg, args)
+
 
 class Wav2VecEncoderMod(Wav2VecEncoder):
     """
