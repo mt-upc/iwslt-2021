@@ -59,6 +59,11 @@ class Wav2Vec2Seq2SeqModConfig(Wav2Vec2Seq2SeqConfig):
         default=None,
         metadata={"help": "projection size of the Adapter"}
     )
+    adapter_post: bool = field(
+        default=False,
+        metadata={"help": "if true, the Adapter is placed after the "
+                          "Length Adaptor"}
+    )
     adapter_dropout: float = field(
         default=0.0,
         metadata={"help": "dropout probability for the encoder-decoder "
@@ -186,6 +191,7 @@ class Wav2VecEncoderMod(Wav2VecEncoder):
             cfg.decoder_embed_dim,
             [int(k) for k in cfg.len_adaptor_kernel_sizes.split(",")],
         )
+        self.adapter_post = cfg.adapter_post
 
     def forward(self, src_tokens, src_lengths, **kwargs):
         encoder_out = super().forward(
@@ -195,7 +201,7 @@ class Wav2VecEncoderMod(Wav2VecEncoder):
             **kwargs
         )
         encoder_out["encoder_padding_mask"] = encoder_out.pop("padding_mask")
-        if self.adapter:
+        if self.adapter and not self.adapter_post:
             encoder_out["encoder_out"] = \
                 self.adapter(
                     encoder_out["encoder_out"]
@@ -204,6 +210,11 @@ class Wav2VecEncoderMod(Wav2VecEncoder):
             encoder_out["encoder_out"],
             (~encoder_out["encoder_padding_mask"]).sum(dim=1)
         )
+        if self.adapter and self.adapter_post:
+            encoder_out["encoder_out"] = \
+                self.adapter(
+                    encoder_out["encoder_out"]
+                )
         encoder_out["encoder_padding_mask"] = lengths_to_padding_mask(lengths)
         return {k: [v] for k, v in encoder_out.items()}
 
