@@ -235,12 +235,18 @@ ln -s $IWSLT_TEST_ROOT/tst2020.tsv $DATA_ROOT/tst2020_iwslt.tsv
 ln -s $IWSLT_TEST_ROOT/tst2021.tsv $DATA_ROOT/tst2021_iwslt.tsv
 ```
 
-## Training
+## Experiments
 Set the environment variables:
 ```bash
 export SAVE_DIR=...          # where the checkpoints, hydra logs and tensorboard logs will be saved
 ```
 
+NOTE: When launching the trainings, take into account:
+- If you use a different number of GPUs, remember to set the appropriate value for `+optimization.update_freq='[x]'` (where `x = old_update_freq * old_n_gpus / new_n_gpus`).
+
+- We recommend to set `+dataset.num_workers=y` for a better performance (where `y = n_cpu // 2`).
+
+### 1) LNA-ED
 Run the following command to train the model:
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3 \
@@ -249,38 +255,39 @@ fairseq-hydra-train \
   --config-name lna_ed.yaml
 ```
 
-We used 4 GPUs and `update_freq=16`, which is equivalent to using 64 GPUs. Remember to keep `n_gpu·update_freq=64` if you use a different number of GPUs.
-
-## Evaluation
-Generate the outputs of `tst-COMMON_mustc` to evaluate the model:
+Generate predictions of the MuST-C and IWSLT test sets:
 ```bash
-fairseq-generate ${DATA_ROOT} \
-  --path ${SAVE_DIR}/lna_ed/ckpts/checkpoint_last.pt \
-  --results-path ${SAVE_DIR}/lna_ed/results/ \
-  --user-dir ${IWSLT_ROOT}/fairseq_modules \
-  --task speech_to_text_iwslt21 --gen-subset tst-COMMON_mustc \
-  --max-source-positions 960000 --max-tokens 960000   \
-  --skip-invalid-size-inputs-valid-test --prefix-size 1 \
-  --beam 5 --scoring sacrebleu
+for subset in {tst-COMMON_mustc,tst2020_iwslt,tst2020_iwslt}; do
+  fairseq-generate ${DATA_ROOT} \
+    --path ${SAVE_DIR}/lna_ed/ckpts/checkpoint_last.pt \
+    --results-path ${SAVE_DIR}/lna_ed/results/ \
+    --user-dir ${IWSLT_ROOT}/fairseq_modules \
+    --task speech_to_text_iwslt21 --gen-subset $subset \
+    --max-source-positions 960000 --max-tokens 960000   \
+    --skip-invalid-size-inputs-valid-test --prefix-size 1 \
+    --beam 5 --scoring sacrebleu
+done
 ```
 
-And generate predictions for the IWSLT test sets:
+### 2) LNA-ED + Adapter
+Run the following command to train the model:
 ```bash
-fairseq-generate ${DATA_ROOT} \
-  --path ${SAVE_DIR}/lna_ed/ckpts/checkpoint_last.pt \
-  --results-path ${SAVE_DIR}/lna_ed/results/ \
-  --user-dir ${IWSLT_ROOT}/fairseq_modules \
-  --task speech_to_text_iwslt21 --gen-subset tst2020_iwslt \
-  --max-source-positions 960000 --max-tokens 960000   \
-  --skip-invalid-size-inputs-valid-test --prefix-size 1 \
-  --beam 5
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
+fairseq-hydra-train \
+  --config-dir ${IWSLT_ROOT}/config/ \
+  --config-name lna_ed_adapt.yaml
+```
 
-fairseq-generate ${DATA_ROOT} \
-  --path ${SAVE_DIR}/lna_ed/ckpts/checkpoint_last.pt \
-  --results-path ${SAVE_DIR}/lna_ed/results/ \
-  --user-dir ${IWSLT_ROOT}/fairseq_modules \
-  --task speech_to_text_iwslt21 --gen-subset tst2021_iwslt \
-  --max-source-positions 960000 --max-tokens 960000   \
-  --skip-invalid-size-inputs-valid-test --prefix-size 1 \
-  --beam 5
+Generate predictions of the MuST-C and IWSLT test sets:
+```bash
+for subset in {tst-COMMON_mustc,tst2020_iwslt,tst2020_iwslt}; do
+  fairseq-generate ${DATA_ROOT} \
+    --path ${SAVE_DIR}/lna_ed_adapt/ckpts/checkpoint_last.pt \
+    --results-path ${SAVE_DIR}/lna_ed_adapt/results/ \
+    --user-dir ${IWSLT_ROOT}/fairseq_modules \
+    --task speech_to_text_iwslt21 --gen-subset $subset \
+    --max-source-positions 960000 --max-tokens 960000   \
+    --skip-invalid-size-inputs-valid-test --prefix-size 1 \
+    --beam 5 --scoring sacrebleu
+done
 ```

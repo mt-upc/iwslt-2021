@@ -26,7 +26,7 @@ distributed_training:
 dataset:
   train_subset: train_mustc,train_covost,train_europarlst,train_dev_covost,train_dev_europarlst
   valid_subset: dev_mustc
-  num_workers: 4                  # n_cpu // 2
+  num_workers: 4
   max_tokens: 480_000             # 30s @ 16kHz
   batch_size: 18
   required_batch_size_multiple: 1
