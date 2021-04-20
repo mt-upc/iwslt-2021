@@ -46,7 +46,7 @@ checkpoint:
 
 optimization:
   lr: [1e-04]
-  max_update: 22704               # 16 epochs x 1419 updates/epoch
+  max_update: 22704               # ~16 epochs
   update_freq: [16]
   sentence_avg: True
   clip_norm: 20.0
