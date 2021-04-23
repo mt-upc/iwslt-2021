@@ -1,9 +1,9 @@
 # @package _global_
 
 common:
-  seed: 8
+  seed: 10
   user_dir: ${env:IWSLT_ROOT}/fairseq_modules/
-  tensorboard_logdir: ${env:SAVE_DIR}/lna_ed_adapt_ft/tb_logs/
+  tensorboard_logdir: ${env:SAVE_DIR}/lna_ed_ft/tb_logs/
   fp16: True
   memory_efficient_fp16: True
 
@@ -39,8 +39,8 @@ criterion:
   ignore_prefix_size: 1
 
 checkpoint:
-  save_dir: ${env:SAVE_DIR}/lna_ed_adapt_ft/ckpts/
-  finetune_from_model: ${env:SAVE_DIR}/lna_ed_adapt/ckpts/checkpoint_best.pt
+  save_dir: ${env:SAVE_DIR}/lna_ed_ft/ckpts/
+  finetune_from_model: ${env:SAVE_DIR}/lna_ed/ckpts/checkpoint_best.pt
   save_interval_updates: 500
   keep_interval_updates: 10
   keep_best_checkpoints: 5
@@ -84,8 +84,8 @@ model:
   final_dropout: 0.1
   layerdrop: 0.0
 
-  adapter_dim: 4096
-  adapter_dropout: 0.1
+  # adapter_dim: 4096
+  # adapter_dropout: 0.1
 
   len_adaptor_kernel_sizes: 3,3,3
   len_adaptor_channels: 1024
@@ -106,7 +106,7 @@ model:
 
 hydra:
   run:
-    dir: ${env:SAVE_DIR}/lna_ed_adapt_ft/hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: ${env:SAVE_DIR}/lna_ed_ft/hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
   sweep:
-    dir: ${env:SAVE_DIR}/lna_ed_adapt_ft/hydra_multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: ${env:SAVE_DIR}/lna_ed_ft/hydra_multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
     subdir: ${hydra.job.num}
