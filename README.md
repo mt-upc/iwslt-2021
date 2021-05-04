@@ -255,9 +255,9 @@ fairseq-hydra-train \
   --config-name lna_ed.yaml
 ```
 
-Generate predictions of the MuST-C and IWSLT test sets:
+Generate predictions of the MuST-C dev and test sets:
 ```bash
-for subset in {tst-COMMON_mustc,tst2020_iwslt,tst2020_iwslt}; do
+for subset in {dev_mustc,tst-COMMON_mustc}; do
   fairseq-generate ${DATA_ROOT} \
     --path ${SAVE_DIR}/lna_ed/ckpts/checkpoint_last.pt \
     --results-path ${SAVE_DIR}/lna_ed/results/ \
@@ -278,9 +278,9 @@ fairseq-hydra-train \
   --config-name lna_ed_adapt.yaml
 ```
 
-Generate predictions of the MuST-C and IWSLT test sets:
+Generate predictions of the MuST-C dev and test sets:
 ```bash
-for subset in {tst-COMMON_mustc,tst2020_iwslt,tst2020_iwslt}; do
+for subset in {dev_mustc,tst-COMMON_mustc}; do
   fairseq-generate ${DATA_ROOT} \
     --path ${SAVE_DIR}/lna_ed_adapt/ckpts/checkpoint_last.pt \
     --results-path ${SAVE_DIR}/lna_ed_adapt/results/ \
@@ -308,9 +308,9 @@ fairseq-hydra-train \
   --config-name lna_ed_adapt_2step_2.yaml
 ```
 
-Generate predictions of the MuST-C and IWSLT test sets:
+Generate predictions of the MuST-C dev and test sets:
 ```bash
-for subset in {tst-COMMON_mustc,tst2020_iwslt,tst2020_iwslt}; do
+for subset in {dev_mustc,tst-COMMON_mustc}; do
   fairseq-generate ${DATA_ROOT} \
     --path ${SAVE_DIR}/lna_ed_adapt_2step_2/ckpts/checkpoint_last.pt \
     --results-path ${SAVE_DIR}/lna_ed_adapt_2step_2/results/ \
