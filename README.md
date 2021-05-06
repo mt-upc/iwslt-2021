@@ -1,5 +1,5 @@
-# iwslt-2021
-Systems submitted to IWSLT 2021 by the MT-UPC group.
+# UPC's Speech Translation System for IWSLT 2021
+System submitted to the [IWSLT 2021](https://iwslt.org/2021/) [offline speech translation task](https://iwslt.org/2021/offline) by the [UPC Machine Translation group](https://mt.cs.upc.edu).
 
 ## Setting up the environment
 
