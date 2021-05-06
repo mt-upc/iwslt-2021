@@ -298,18 +298,29 @@ fairseq-hydra-train \
   --config-name lna_ed_adapt.yaml
 ```
 
+Run the following command to fine-tune it with just with MuST-C:
+
+```bash
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
+fairseq-hydra-train \
+  --config-dir ${IWSLT_ROOT}/config/ \
+  --config-name lna_ed_adapt_ft.yaml
+```
+
 Generate predictions of the MuST-C dev and test sets:
 
 ```bash
-for subset in {dev_mustc,tst-COMMON_mustc}; do
-  fairseq-generate ${DATA_ROOT} \
-    --path ${SAVE_DIR}/lna_ed_adapt/ckpts/checkpoint_last.pt \
-    --results-path ${SAVE_DIR}/lna_ed_adapt/results/ \
-    --user-dir ${IWSLT_ROOT}/fairseq_modules \
-    --task speech_to_text_iwslt21 --gen-subset $subset \
-    --max-source-positions 960000 --max-tokens 960000   \
-    --skip-invalid-size-inputs-valid-test --prefix-size 1 \
-    --beam 5 --scoring sacrebleu
+for experiment in {lna_ed_adapt, lna_ed_adapt_ft}; do
+  for subset in {dev_mustc,tst-COMMON_mustc}; do
+    fairseq-generate ${DATA_ROOT} \
+      --path ${SAVE_DIR}/${experiment}/ckpts/checkpoint_last.pt \
+      --results-path ${SAVE_DIR}/${experiment}/results/ \
+      --user-dir ${IWSLT_ROOT}/fairseq_modules \
+      --task speech_to_text_iwslt21 --gen-subset $subset \
+      --max-source-positions 960000 --max-tokens 960000   \
+      --skip-invalid-size-inputs-valid-test --prefix-size 1 \
+      --beam 5 --scoring sacrebleu
+  done
 done
 ```
 
