@@ -1,6 +1,17 @@
 # UPC's Speech Translation System for IWSLT 2021
 System submitted to the [IWSLT 2021](https://iwslt.org/2021/) [offline speech translation task](https://iwslt.org/2021/offline) by the [UPC Machine Translation group](https://mt.cs.upc.edu).
 
+Cite this work as:
+
+```
+@article{gallego2021iwslt,
+  title={UPC's Speech Translation System for IWSLT 2021},
+  author={G{\'a}llego, Gerard I. and Tsiamas, Ioannis and Escolano, Carlos and Costa-juss{\`a}, Marta R. and Jos{\'e} A. R. Fonollosa},
+  journal={arXiv preprint arXiv:2105.04512},
+  year={2021}
+}
+```
+
 ## Setting up the environment
 
 Set the environment variables:
