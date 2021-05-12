@@ -12,7 +12,11 @@ def format_gen_output(path_to_generation_file: Path) -> None:
         for line in f.read().splitlines():
             if line[:2] == "D-":
                 correct_order.append(int(line.split(maxsplit = 1)[0].split("D-")[-1]))
-                raw_generation.append(line.split(maxsplit = 2)[2])
+                splits = line.split(maxsplit = 2)
+                if len(splits) == 3:
+                    raw_generation.append(splits[2])
+                else:
+                    raw_generation.append("")
 
     # fix to correct order
     raw_generation = [gen for _, gen in sorted(zip(correct_order, raw_generation))]

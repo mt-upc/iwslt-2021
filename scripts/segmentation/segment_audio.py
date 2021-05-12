@@ -74,8 +74,9 @@ def split_text_to_segments(tokens: str, max_segm_len: int, min_pause_len: int) -
         n_segm_prev = n_segm
         n_segm = len(segments)
         
-    # delete first empty segment (talks always have a leading pause)
+    # delete first and last empty segments
     del segments[0]
+    del segments[-1]
 
     return segments
 

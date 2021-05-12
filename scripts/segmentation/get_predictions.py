@@ -125,11 +125,13 @@ def get_predictions(test_dir_root: str, bs: int, extra_step: float, loading_step
 
     token_predictions = {}
     for wf in wav_file_order:
+        wf = f"{wf}.wav"
         print(f"Generating token predictions for {wf}")
-        path_to_wav = test_dir_root / "wavs" / f"{wf}.wav"
+        path_to_wav = test_dir_root / "wavs" / wf
         token_predictions[wf] = get_preds_for_wav(model, tokenizer, device, bs,
             path_to_wav, extra_step, loading_step)
 
+    test_dir_root.mkdir(parents = True, exist_ok = True)
     path_to_preds = test_dir_root / "token_predictions.json"
     with open(path_to_preds, "w") as f:
         json.dump(token_predictions, f)
