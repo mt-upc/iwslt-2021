@@ -278,7 +278,7 @@ Generate predictions of the MuST-C dev and test sets:
 ```bash
 for subset in {dev_mustc,tst-COMMON_mustc}; do
   fairseq-generate ${DATA_ROOT} \
-    --path ${SAVE_DIR}/lna_ed/ckpts/checkpoint_last.pt \
+    --path ${SAVE_DIR}/lna_ed/ckpts/checkpoint_best.pt \
     --results-path ${SAVE_DIR}/lna_ed/results/ \
     --user-dir ${IWSLT_ROOT}/fairseq_modules \
     --task speech_to_text_iwslt21 --gen-subset $subset \
@@ -313,7 +313,7 @@ Generate predictions of the MuST-C dev and test sets:
 for experiment in {lna_ed_adapt, lna_ed_adapt_ft}; do
   for subset in {dev_mustc,tst-COMMON_mustc}; do
     fairseq-generate ${DATA_ROOT} \
-      --path ${SAVE_DIR}/${experiment}/ckpts/checkpoint_last.pt \
+      --path ${SAVE_DIR}/${experiment}/ckpts/checkpoint_best.pt \
       --results-path ${SAVE_DIR}/${experiment}/results/ \
       --user-dir ${IWSLT_ROOT}/fairseq_modules \
       --task speech_to_text_iwslt21 --gen-subset $subset \
@@ -348,12 +348,54 @@ Generate predictions of the MuST-C dev and test sets:
 ```bash
 for subset in {dev_mustc,tst-COMMON_mustc}; do
   fairseq-generate ${DATA_ROOT} \
-    --path ${SAVE_DIR}/lna_ed_adapt_2step_2/ckpts/checkpoint_last.pt \
+    --path ${SAVE_DIR}/lna_ed_adapt_2step_2/ckpts/checkpoint_best.pt \
     --results-path ${SAVE_DIR}/lna_ed_adapt_2step_2/results/ \
     --user-dir ${IWSLT_ROOT}/fairseq_modules \
     --task speech_to_text_iwslt21 --gen-subset $subset \
     --max-source-positions 960000 --max-tokens 960000   \
     --skip-invalid-size-inputs-valid-test --prefix-size 1 \
+    --beam 5 --scoring sacrebleu
+done
+```
+
+## Prepare Test Sets with provided and custom Segmentation
+
+To get token predictions from Wav2Vec 2.0
+
+```bash
+for subset in {tst2020,tst2021}; do
+  python ${IWSLT_ROOT}/scripts/segmentation/get_predictions.py --wav_dir ${IWSLT_TEST_ROOT}/${subset}/wavs
+done
+```
+
+Use the predictions to segment the audio files with the maximum segment length of 22, which was found to maximize BLEU score on the tst2019.
+
+```bash
+for subset in {tst2020,tst2021}; do
+python ${IWSLT_ROOT}scripts/segmentation/segment_audio.py --dataset_root ${IWSLT_TEST_ROOT}/${subset} --max_segm_len 22
+```
+
+Prepare test sets for generation
+
+```bash
+for subset in {tst2020,tst2021}; do
+  python ${IWSLT_ROOT}/scripts/prepare_iwslt_tst.py -d ${IWSLT_TEST_ROOT}/${subset}
+  python ${IWSLT_ROOT}/scripts/prepare_iwslt_tst.py -d ${IWSLT_TEST_ROOT}/${subset} -c
+done
+```
+
+Generate predictions for the two test sets for given and own segmentation
+
+```bash
+experiment_name=...
+for subset in {tst2020,tst2020_own_22,tst2021,tst2021_own_22}; do
+  fairseq-generate ${DATA_ROOT} \
+    --path ${SAVE_DIR}/${experiment_name}/ckpts/checkpoint_best.pt \
+    --results-path ${SAVE_DIR}/${experiment_name}/results/ \
+    --user-dir ${IWSLT_ROOT}/fairseq_modules \
+    --task speech_to_text_iwslt21 --gen-subset $subset \
+    --max-source-positions 960000 --max-tokens 960000   \
+    --prefix-size 1 \
     --beam 5 --scoring sacrebleu
 done
 ```
