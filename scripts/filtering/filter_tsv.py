@@ -56,7 +56,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_name", type = str, required = True, choices = DATASETS)
-    parser.add_argument("--dataset_root", type = str, required = True,
+    parser.add_argument("--tsv_root", type = str, required = True,
         help = "Path for the directory containing the TSV files for this DATASET.")
     parser.add_argument("--asr_batch_size", type = int, default = 24,
         help = "Batch size to be used during the ASR inference with Wav2Vec.")
@@ -64,8 +64,8 @@ def main():
         help = "Word-Error-Rate above which an example is considered noisy.")
     args = parser.parse_args()
 
-    dataset_root = Path(args.dataset_root)
-    file_list = os.listdir(dataset_root)
+    tsv_root = Path(args.tsv_root)
+    file_list = os.listdir(tsv_root)
 
     utterance_cleaner = CLEANER_FUNC[args.dataset_name]
     asr_tsv_path = ""
@@ -88,14 +88,14 @@ def main():
                 warnings.warn(f"no file found for dataset = {args.dataset_name}, task = {task}, split = {split}")
                 continue
 
-            tsv_path = dataset_root / file_name
+            tsv_path = tsv_root / file_name
             df_split = load_df_from_tsv(tsv_path)
 
             print(f"Running filtering script for {split} split of {args.dataset_name} from file {tsv_path}")
             df_split_filtered = filter(df_split, asr_tsv_path, task, utterance_cleaner,
                 args.asr_batch_size, args.asr_wer_threshold)
 
-            new_tsv_path = dataset_root / Path(tsv_path.stem + "_filtered.tsv")
+            new_tsv_path = tsv_root / Path(tsv_path.stem + "_filtered.tsv")
             save_df_to_tsv(df_split_filtered, new_tsv_path)
             print(f"Saved filtered TSV for: {split} of {task} at: {new_tsv_path}")
 
