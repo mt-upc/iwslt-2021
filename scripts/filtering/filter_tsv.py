@@ -6,9 +6,9 @@ import os
 import warnings
 
 import sys
-sys.path.append("./../fairseq/examples")
-sys.path.append("./../fairseq/fairseq/data")
-sys.path.append("scripts/filtering")
+sys.path.append(os.environ['FAIRSEQ_ROOT'] + "/examples")
+sys.path.append(os.environ['FAIRSEQ_ROOT'] + "/fairseq/data")
+sys.path.append(os.environ['IWSLT_ROOT'] + "/scripts/filtering")
 from speech_to_text.data_utils import load_df_from_tsv, save_df_to_tsv
 from asr.asr_inference import asr_inference
 from filtering_utils import (find_noisy_examples, mustc_utterance_cleaner,
