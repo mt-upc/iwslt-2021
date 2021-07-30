@@ -1,8 +1,10 @@
 import numpy as np
 from omegaconf import II
 from dataclasses import dataclass, field
+from typing import Optional
 
 from fairseq.data import ConcatDataset, SubsampleDataset
+from fairseq.data.audio.speech_to_text_dataset import SpeechToTextDataset
 from fairseq.tasks import register_task
 from fairseq.tasks.speech_to_text import (
     SpeechToTextTask,
@@ -51,6 +53,11 @@ class SpeechToTextModTaskConfig(SpeechToTextTaskConfig):
         metadata={"help": "Whether to normalize the audiowave to zero mean and unit variance."}
     )
 
+    interactive_tgt_lang: Optional[str] = field(
+        default=None,
+        metadata={"help": "Target language to be used with Fairseq's interactive mode."}
+    )
+
     seed: int = II("common.seed")
     max_tokens: int = II("dataset.max_tokens")
 
@@ -72,6 +79,8 @@ class SpeechToTextModTask(SpeechToTextTask):
         }
 
         self.max_src_len = min(cfg.max_source_positions, cfg.max_tokens)
+        self.tgt_dict = tgt_dict
+        self.interactive_tgt_lang = cfg.interactive_tgt_lang
 
         assert len(set(self.da_effects_info["echo"]["delay"])) == \
             len(set(self.da_effects_info["echo"]["decay"])), \
@@ -113,3 +122,12 @@ class SpeechToTextModTask(SpeechToTextTask):
             if split.startswith("train"):
                 # Perform a new subsampling at each epoch
                 self.load_dataset(split, epoch)
+
+    def build_dataset_for_inference(self, src_tokens, src_lengths, **kwargs):
+        assert self.interactive_tgt_lang is not None
+        return SpeechToTextDataset(
+            "interactive", False, self.data_cfg, src_tokens, src_lengths,
+            tgt_texts=([""] * len(src_tokens)),
+            tgt_langs=([self.interactive_tgt_lang] * len(src_tokens)),
+            tgt_dict=self.tgt_dict
+        )
