@@ -118,7 +118,7 @@ class SpeechToTextModTask(SpeechToTextTask):
         np.random.seed(self.cfg.seed + epoch)
         if epoch == 1:
             return
-        for split in self.datasets.keys():
+        for split in list(self.datasets.keys()):
             if split.startswith("train"):
                 # Perform a new subsampling at each epoch
                 self.load_dataset(split, epoch)
