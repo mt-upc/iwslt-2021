@@ -15,7 +15,10 @@ from fairseq.modules import (
     LayerNorm,
     FairseqDropout,
 )
-from fairseq.models import register_model
+from fairseq.models import (
+    FairseqEncoder,
+    register_model
+)
 from fairseq.models.transformer import TransformerDecoder
 from fairseq.models.wav2vec import (
     Wav2Vec2Seq2SeqConfig,
@@ -28,15 +31,22 @@ from fairseq.models.speech_to_text import (
     Conv1dSubsampler,
 )
 
+from transformers import Wav2Vec2Model
+
 logger = logging.getLogger(__name__)
 
 BLOCKS2REGEX = {
     "encoder.feat_extr": r"encoder.*\.feature_extractor\..*|"
+                         r"encoder.*\.feature_projection\..*|"
                          r"encoder.*\.post_extract_proj\..*|"
-                         r"encoder.*\.pos_conv\..*",
-    "encoder.self_attn": r"encoder.*\.self_attn\..*",
+                         r"masked_spec_embed|"
+                         r"encoder.*\.pos_conv\..*|"
+                         r"encoder.*\.pos_conv_embed\..*",
+    "encoder.self_attn": r"encoder.*\.self_attn\..*|"
+                         r"encoder.*\.attention\..*",
     "encoder.layer_norm": r"encoder.*layer_norm.*",
-    "encoder.ffn": r"encoder.*\.fc[1-2]\..*",
+    "encoder.ffn": r"encoder.*\.fc[1-2]\..*|"
+                   r"encoder.*\.feed_forward\..*",
     "adapter": r"encoder\.adapter.*",
     "len_adaptor": r"encoder\.len_adaptor.*",
     "decoder.embedding": r"decoder\.embed_tokens.*|"
@@ -78,6 +88,12 @@ class Wav2Vec2Seq2SeqModConfig(Wav2Vec2Seq2SeqConfig):
         default=1024,
         metadata={"help": "# of channels in the Length Adaptor (Conv1d)"}
     )
+
+    load_pretrained_w2v_from_hf: Optional[str] = field(
+        default=None,
+        metadata={"help": "name of the Hugging Face Wav2Vec model to load"}
+    )
+
     load_pretrained_decoder_from: Optional[str] = field(
         default=None,
         metadata={"help": "model to take decoder weights from"}
@@ -131,7 +147,10 @@ class Wav2Vec2Seq2SeqModModel(Wav2Vec2Seq2SeqModel):
 
     @classmethod
     def build_encoder(cls, cfg: Wav2Vec2Seq2SeqModConfig):
-        return Wav2VecEncoderMod(cfg)
+        if cfg.load_pretrained_w2v_from_hf is not None:
+            return Wav2VecHFEncoder(cfg)
+        else:
+            return Wav2VecEncoderMod(cfg)
 
     @classmethod
     def build_decoder(cls, cfg: Wav2Vec2Seq2SeqModConfig, tgt_dict, embed_tokens):
@@ -230,6 +249,81 @@ class Wav2VecEncoderMod(Wav2VecEncoder):
             encoder_out["encoder_out"],
             (~encoder_out["encoder_padding_mask"]).sum(dim=1)
         )
+        if self.adapter and self.adapter_post:
+            encoder_out["encoder_out"] = \
+                self.adapter(
+                    encoder_out["encoder_out"]
+                )
+        encoder_out["encoder_padding_mask"] = lengths_to_padding_mask(lengths)
+        return {k: [v] for k, v in encoder_out.items()}
+
+    @torch.jit.export
+    def reorder_encoder_out(self, encoder_out, new_order):
+        if len(encoder_out["encoder_out"]) == 0:
+            new_encoder_out = []
+        else:
+            new_encoder_out = [encoder_out["encoder_out"][0].index_select(1, new_order)]
+        if len(encoder_out["encoder_padding_mask"]) == 0:
+            new_encoder_padding_mask = []
+        else:
+            new_encoder_padding_mask = [
+                encoder_out["encoder_padding_mask"][0].index_select(0, new_order)
+            ]
+        return {
+            "encoder_out": new_encoder_out,  # T x B x C
+            "encoder_padding_mask": new_encoder_padding_mask,  # B x T
+        }
+
+
+class Wav2VecHFEncoder(FairseqEncoder):
+    """
+    Wrapper of the Hugging Face Wav2Vec 2.0 encoder
+
+    Moreover, it includes the adapter and length adaptor modules.
+    """
+    def __init__(self, cfg: Wav2Vec2Seq2SeqModConfig):
+        super().__init__(None)
+        self.w2v_model = Wav2Vec2Model.from_pretrained(
+            cfg.load_pretrained_w2v_from_hf,
+            gradient_checkpointing=False
+        )
+
+        self.adapter = Adapter(
+            cfg.decoder_embed_dim,
+            cfg.adapter_dim,
+            cfg.adapter_dropout
+        ) if cfg.adapter_dim else None
+
+        self.len_adaptor = Conv1dSubsampler(
+            cfg.decoder_embed_dim,
+            cfg.len_adaptor_channels,
+            cfg.decoder_embed_dim,
+            [int(k) for k in cfg.len_adaptor_kernel_sizes.split(",")],
+        )
+        self.adapter_post = cfg.adapter_post
+
+    def forward(self, src_tokens, src_lengths, **kwargs):
+        encoder_out = {}
+        encoder_out['encoder_out'] = self.w2v_model(
+            input_values=src_tokens,
+            attention_mask=lengths_to_padding_mask(src_lengths).long(),
+            return_dict=True
+        )['last_hidden_state']
+
+        encoder_out['encoder_padding_mask'] = lengths_to_padding_mask(
+            self.w2v_model._get_feat_extract_output_lengths(src_lengths)
+        ).bool()
+
+        if self.adapter and not self.adapter_post:
+            encoder_out["encoder_out"] = \
+                self.adapter(
+                    encoder_out["encoder_out"]
+                )
+        encoder_out["encoder_out"], lengths = self.len_adaptor(
+            encoder_out["encoder_out"],
+            (~encoder_out["encoder_padding_mask"]).sum(dim=1)
+        )
+
         if self.adapter and self.adapter_post:
             encoder_out["encoder_out"] = \
                 self.adapter(
