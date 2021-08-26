@@ -12,13 +12,18 @@ Results             |  Learning Curves
 ![](/readme_figures/tbl.PNG) | ![](/readme_figures/fig.PNG)
 
 Cite this work as:
-
 ```
-@article{gallego2021iwslt,
-  title={End-to-End Speech Translation with Pre-trained Models and Adapters: UPC at IWSLT 2021},
-  author={G{\'a}llego, Gerard I. and Tsiamas, Ioannis and Escolano, Carlos and Costa-juss{\`a}, Marta R. and Jos{\'e} A. R. Fonollosa},
-  journal={arXiv preprint arXiv:2105.04512},
-  year={2021}
+@inproceedings{gallego2021iwslt,
+    title = "End-to-End Speech Translation with Pre-trained Models and Adapters: UPC at IWSLT 2021",
+    author = "G{\'a}llego, Gerard I. and Tsiamas, Ioannis and Escolano, Carlos and Fonollosa, Jos{\'e} A. R.  and Costa-juss{\`a}, Marta R.",
+    booktitle = "Proceedings of the 18th International Conference on Spoken Language Translation (IWSLT 2021)",
+    month = aug,
+    year = "2021",
+    address = "Bangkok, Thailand (online)",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2021.iwslt-1.11",
+    doi = "10.18653/v1/2021.iwslt-1.11",
+    pages = "110--119",
 }
 ```
 
