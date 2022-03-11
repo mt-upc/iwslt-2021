@@ -50,7 +50,7 @@ conda activate iwslt21
 We have been working on some PR of Fairseq, but they have not been merged yet. Clone our Fairseq fork and install it.
 
 ```bash
-git clone -b iwslt-2021 https://github.com/mt-upc/fairseq.git ${FAIRSEQ_ROOT} && \
+git clone -b iwslt21 https://github.com/mt-upc/fairseq.git ${FAIRSEQ_ROOT} && \
 pip install --editable ${FAIRSEQ_ROOT}
 ```
 
