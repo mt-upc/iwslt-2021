@@ -58,7 +58,7 @@ def main():
     args = parser.parse_args()
 
     root = Path(args.test_dir_root).absolute()
-    test_id = root.suffix[1:]
+    test_id = root.stem
 
     # run for every custom segmentation
     if args.custom_segm_file:

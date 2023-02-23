@@ -155,13 +155,11 @@ Download IWSLT test sets to `$IWSLT_TEST_ROOT`:
 
 ```bash
 mkdir -p ${IWSLT_TEST_ROOT}/tst2020/ && \
-wget https://surfdrive.surf.nl/files/index.php/s/KVYz2OgcVZJGPYK/download -O - | \
+wget http://i13pc106.ira.uka.de/~jniehues/IWSLT-SLT/data/eval/en-de/segmented/IWSLT-SLT.segmented.tst2020.en-de.tgz -O - | \
   tar -xz --strip-components 1 -C ${IWSLT_TEST_ROOT}/tst2020/
 ```
 ```bash
-mkdir -p ${IWSLT_TEST_ROOT}/tst2021/ && \
-wget https://surfdrive.surf.nl/files/index.php/s/U3blQuKJ2M0L14K/download -O - | \
-  tar -xz --strip-components 1 -C ${IWSLT_TEST_ROOT}/tst2021/
+# TODO: Add segmented tst2021 (not available in the new website)
 ```
 
 ### Preparation
@@ -232,7 +230,8 @@ python $FAIRSEQ_ROOT/examples/speech_to_text/prep_europarlst_data.py \
   --use-audio-input --prepend-tgt-lang-tag
 
 # IWSLT test sets
-python $IWSLT_ROOT/scripts/prepare_iwslt_tst.py --data-root $IWSLT_TEST_ROOT
+python $IWSLT_ROOT/scripts/prepare_iwslt_tst.py --test-dir-root ${IWSLT_TEST_ROOT}/tst2020
+# TODO: Add segmented tst2021 (not available in the new website)
 ```
 
 ### Filtering
